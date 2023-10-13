@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "nquestbot",
+  "version": "${version}",
+  "name": "Nemo's Quest Bot",
+  "description": "Make players go to places around the world.",
+  "authors": [
+    "Zbx1425"
+  ],
+  "contact": {
+    "website": "https://www.zbx1425.cn",
+    "repo": "https://github.com/zbx1425/NQuestBot"
+  },
+  "license": "MIT",
+  "icon": "assets/nquestbot/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "cn.zbx1425.nquestbot.NQuestBot"
+    ]
+  },
+  "mixins": [
+    "nquestbot.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
