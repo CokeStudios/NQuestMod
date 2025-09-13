@@ -1,6 +1,8 @@
 package cn.zbx1425.nquestbot.data.criteria;
 
-public abstract class Criterion {
+import cn.zbx1425.nquestbot.data.platform.PlayerStatus;
 
+public interface Criterion {
 
+    boolean isFulfilled(PlayerStatus playerStatus);
 }
