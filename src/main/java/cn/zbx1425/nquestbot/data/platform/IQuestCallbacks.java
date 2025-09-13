@@ -1,16 +1,18 @@
 package cn.zbx1425.nquestbot.data.platform;
 
 import cn.zbx1425.nquestbot.data.quest.Quest;
-import cn.zbx1425.nquestbot.data.quest.Step;
-import cn.zbx1425.nquestbot.data.quest.PlayerProfile;
+import cn.zbx1425.nquestbot.data.QuestEngine;
 import cn.zbx1425.nquestbot.data.quest.QuestCompletionData;
+import cn.zbx1425.nquestbot.data.quest.QuestProgress;
 
 import java.util.UUID;
 
 public interface IQuestCallbacks {
 
-    void onStepCompleted(UUID playerUuid, Step completedStep);
+    void onQuestStarted(QuestEngine questEngine, UUID playerUuid, Quest quest);
 
-    void onQuestCompleted(UUID playerUuid, Quest quest, QuestCompletionData data);
+    void onStepCompleted(QuestEngine questEngine, UUID playerUuid, Quest quest, QuestProgress progress);
+
+    void onQuestCompleted(QuestEngine questEngine, UUID playerUuid, Quest quest, QuestCompletionData data);
 
 }

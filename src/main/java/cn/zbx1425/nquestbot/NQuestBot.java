@@ -2,9 +2,11 @@ package cn.zbx1425.nquestbot;
 
 import cn.zbx1425.nquestbot.data.QuestEngine;
 import cn.zbx1425.nquestbot.data.QuestPersistence;
+import cn.zbx1425.nquestbot.data.platform.PlayerStatus;
 import cn.zbx1425.nquestbot.data.quest.PlayerProfile;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
@@ -42,7 +44,7 @@ public class NQuestBot implements ModInitializer {
             try {
                 questEngine.playerProfiles.put(player.getGameProfile().getId(),
                         questStorage.loadPlayerProfile(player.getGameProfile().getId()));
-                questNotifications.onPlayerJoin(player.getGameProfile().getId());
+                questNotifications.onPlayerJoin(questEngine, player.getGameProfile().getId());
             } catch (IOException ex) {
                 LOGGER.error("Failed to load player profile for {}", player.getGameProfile().getName(), ex);
             }
@@ -58,6 +60,18 @@ public class NQuestBot implements ModInitializer {
                     LOGGER.error("Failed to save player profile for {}", player.getGameProfile().getName(), ex);
                 }
             }
+        });
+
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            assert questEngine != null;
+            if (server.getTickCount() % 20 != 15) return; // Every second
+            questEngine.updatePlayers(playerUuid -> {
+                ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+                if (player != null) {
+                    return PlayerStatus.fromPlayer(player);
+                }
+                return null; // Player not online
+            });
         });
     }
 }

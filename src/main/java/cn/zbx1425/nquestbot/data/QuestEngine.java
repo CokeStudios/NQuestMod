@@ -23,6 +23,10 @@ public class QuestEngine {
         this.quests = Map.of();
     }
 
+    public PlayerProfile getPlayerProfile(UUID playerUuid) {
+        return playerProfiles.get(playerUuid);
+    }
+
     public void updatePlayers(Function<UUID, PlayerStatus> statusProvider) {
         for (PlayerProfile profile : playerProfiles.values()) {
             if (profile.activeQuests.isEmpty()) {
@@ -102,14 +106,14 @@ public class QuestEngine {
         progress.stepStartTimes.put(0, progress.questStartTime);
 
         profile.activeQuests.put(questId, progress);
-        // Maybe an event for quest start? For now, we just start.
+        callback.onQuestStarted(this, playerUuid, quest);
     }
 
     private void advanceQuestStep(PlayerProfile profile, QuestProgress progress, Quest quest) {
         // Mark current step as complete
         long now = System.currentTimeMillis();
 
-        callback.onStepCompleted(profile.playerUuid, quest.steps.get(progress.currentStepIndex));
+        callback.onStepCompleted(this, profile.playerUuid, quest, progress);
 
         progress.currentStepIndex++;
 
@@ -134,7 +138,7 @@ public class QuestEngine {
             profile.completedQuests.put(progress.questId, completionData);
             profile.totalQuestPoints += quest.questPoints;
 
-            callback.onQuestCompleted(profile.playerUuid, quest, completionData);
+            callback.onQuestCompleted(this, profile.playerUuid, quest, completionData);
         } else {
             // Advance to next step
             progress.stepStartTimes.put(progress.currentStepIndex, now);

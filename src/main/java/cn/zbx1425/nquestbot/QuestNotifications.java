@@ -1,32 +1,98 @@
 package cn.zbx1425.nquestbot;
 
+import cn.zbx1425.nquestbot.data.QuestEngine;
 import cn.zbx1425.nquestbot.data.platform.IQuestCallbacks;
-import cn.zbx1425.nquestbot.data.quest.Quest;
-import cn.zbx1425.nquestbot.data.quest.QuestCompletionData;
-import cn.zbx1425.nquestbot.data.quest.Step;
+import cn.zbx1425.nquestbot.data.quest.*;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class QuestNotifications implements IQuestCallbacks {
 
-    private MinecraftServer server;
+    private final MinecraftServer server;
 
     public QuestNotifications(MinecraftServer server) {
         this.server = server;
     }
 
-    public void onPlayerJoin(UUID playerUuid) {
+    public void onPlayerJoin(QuestEngine questEngine, UUID playerUuid) {
+        ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+        if (player == null) return;
 
+        
     }
 
     @Override
-    public void onStepCompleted(UUID playerUuid, Step completedStep) {
+    public void onQuestStarted(QuestEngine questEngine, UUID playerUuid, Quest quest) {
+        ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+        if (player == null) return;
+        player.sendSystemMessage(Component.literal("⭐ Quest Started! ⭐")
+                .withStyle(Style.EMPTY.withColor(ChatFormatting.GOLD).withBold(true)), false);
+        player.sendSystemMessage(Component.literal(quest.name).withStyle(ChatFormatting.YELLOW), false);
 
+        if (quest.steps.size() > 0) {
+            Step firstStep = quest.steps.get(0);
+            player.sendSystemMessage(Component.literal("▶ First: ").withStyle(ChatFormatting.AQUA)
+                    .append(firstStep.getDisplayRepr()), false);
+        }
     }
 
     @Override
-    public void onQuestCompleted(UUID playerUuid, Quest quest, QuestCompletionData data) {
+    public void onStepCompleted(QuestEngine questEngine, UUID playerUuid, Quest quest, QuestProgress progress) {
+        ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+        if (player == null) return;
 
+        Step completedStep = quest.steps.get(progress.currentStepIndex);
+        player.sendSystemMessage(Component.literal("✔ Step Complete: ").withStyle(ChatFormatting.GREEN)
+                .append(completedStep.getDisplayRepr()), false);
+
+        if (progress.currentStepIndex < quest.steps.size()) {
+            Step nextStep = quest.steps.get(progress.currentStepIndex);
+            MutableComponent nextStepMsg = Component.literal("▶ Next: ").withStyle(ChatFormatting.AQUA)
+                    .append(nextStep.getDisplayRepr());
+            player.sendSystemMessage(nextStepMsg, false);
+        }
+    }
+
+    @Override
+    public void onQuestCompleted(QuestEngine questEngine, UUID playerUuid, Quest quest, QuestCompletionData data) {
+        ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+        if (player == null) return;
+        player.sendSystemMessage(Component.literal("⭐ Quest Complete! ⭐")
+                .withStyle(Style.EMPTY.withColor(ChatFormatting.GOLD).withBold(true)), false);
+        player.sendSystemMessage(Component.literal(quest.name).withStyle(ChatFormatting.YELLOW), false);
+        player.sendSystemMessage(Component.literal("  Time taken: ").withStyle(ChatFormatting.WHITE)
+                .append(Component.literal(formatDuration(data.durationMillis)).withStyle(ChatFormatting.AQUA)), false);
+        player.sendSystemMessage(Component.literal("  Quest Points: ").withStyle(ChatFormatting.WHITE)
+                .append(Component.literal("+" + quest.questPoints + " QP").withStyle(ChatFormatting.GREEN)), false);
+    }
+
+    public Optional<Component> getBossBarMessage(QuestEngine questEngine, UUID playerUuid) {
+        PlayerProfile profile = questEngine.getPlayerProfile(playerUuid);
+        if (profile == null || profile.activeQuests.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return profile.activeQuests.values().stream().findFirst().map(progress -> {
+            Quest quest = questEngine.quests.get(progress.questId);
+            if (quest == null || progress.currentStepIndex >= quest.steps.size()) {
+                return null;
+            }
+            Step currentStep = quest.steps.get(progress.currentStepIndex);
+            return currentStep.getDisplayRepr();
+        });
+    }
+
+    private String formatDuration(long millis) {
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 }
