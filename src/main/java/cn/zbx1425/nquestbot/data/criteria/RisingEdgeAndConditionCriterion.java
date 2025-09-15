@@ -6,20 +6,20 @@ public class RisingEdgeAndConditionCriterion implements Criterion {
 
     protected final Criterion triggerCriterion;
     protected final Criterion conditionCriterion;
-    protected final Criterion serializableCriterion;
+    protected final Criterion descriptionSupplier;
 
     protected transient boolean wasTriggerFulfilled = false;
 
-    public RisingEdgeAndConditionCriterion(Criterion triggerCriterion, Criterion conditionCriterion, Criterion serializableCriterion) {
+    public RisingEdgeAndConditionCriterion(Criterion triggerCriterion, Criterion conditionCriterion, Criterion descriptionSupplier) {
         this.triggerCriterion = triggerCriterion;
         this.conditionCriterion = conditionCriterion;
-        this.serializableCriterion = serializableCriterion;
+        this.descriptionSupplier = descriptionSupplier;
     }
 
     public RisingEdgeAndConditionCriterion(RisingEdgeAndConditionCriterion singleton) {
         this.triggerCriterion = singleton.triggerCriterion.createStatefulInstance();
         this.conditionCriterion = singleton.conditionCriterion.createStatefulInstance();
-        this.serializableCriterion = singleton.serializableCriterion.createStatefulInstance();
+        this.descriptionSupplier = singleton.descriptionSupplier.createStatefulInstance();
         this.wasTriggerFulfilled = false;
     }
 
@@ -39,7 +39,7 @@ public class RisingEdgeAndConditionCriterion implements Criterion {
 
     @Override
     public net.minecraft.network.chat.Component getDisplayRepr() {
-        return serializableCriterion.getDisplayRepr();
+        return descriptionSupplier.getDisplayRepr();
     }
 
     @Override

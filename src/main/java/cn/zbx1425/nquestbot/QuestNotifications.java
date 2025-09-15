@@ -40,7 +40,7 @@ public class QuestNotifications implements IQuestCallbacks {
         if (quest.steps.size() > 0) {
             Step firstStep = quest.steps.get(0);
             player.sendSystemMessage(Component.literal("▶ First: ").withStyle(ChatFormatting.AQUA)
-                    .append(firstStep.getProductCriteria().getDisplayRepr()), false);
+                    .append(firstStep.criteria.getDisplayRepr()), false);
         }
     }
 
@@ -51,12 +51,12 @@ public class QuestNotifications implements IQuestCallbacks {
 
         Step completedStep = quest.steps.get(progress.currentStepIndex);
         player.sendSystemMessage(Component.literal("✔ Step Complete: ").withStyle(ChatFormatting.GREEN)
-                .append(completedStep.getProductCriteria().getDisplayRepr()), false);
+                .append(completedStep.criteria.getDisplayRepr()), false);
 
         if (progress.currentStepIndex < quest.steps.size()) {
             Step nextStep = quest.steps.get(progress.currentStepIndex);
             MutableComponent nextStepMsg = Component.literal("▶ Next: ").withStyle(ChatFormatting.AQUA)
-                    .append(nextStep.getProductCriteria().getDisplayRepr());
+                    .append(nextStep.criteria.getDisplayRepr());
             player.sendSystemMessage(nextStepMsg, false);
         }
     }
@@ -86,7 +86,7 @@ public class QuestNotifications implements IQuestCallbacks {
                 return null;
             }
             Step currentStep = quest.steps.get(progress.currentStepIndex);
-            return currentStep.getProductCriteria().getDisplayRepr();
+            return currentStep.criteria.getDisplayRepr();
         });
     }
 
