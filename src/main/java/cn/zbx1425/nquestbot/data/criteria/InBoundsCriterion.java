@@ -18,8 +18,7 @@ public class InBoundsCriterion implements Criterion {
 
     @Override
     public boolean isFulfilled(ServerPlayer player) {
-        if (playerStatus.position == null) return false;
-        return playerStatus.position.isWithin(min, max);
+        return new Vec3d(player.getX(), player.getY(), player.getZ()).isWithin(min, max);
     }
 
     @Override

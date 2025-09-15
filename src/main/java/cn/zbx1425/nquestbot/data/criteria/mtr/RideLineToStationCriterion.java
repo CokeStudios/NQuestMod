@@ -1,10 +1,14 @@
 package cn.zbx1425.nquestbot.data.criteria.mtr;
 
 import cn.zbx1425.nquestbot.data.criteria.Criterion;
+import cn.zbx1425.nquestbot.data.criteria.RisingEdgeAndConditionCriterion;
 import cn.zbx1425.nquestbot.interop.TscStatus;
+import com.google.gson.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+
+import java.lang.reflect.Type;
 
 public class RideLineToStationCriterion implements Criterion {
 
@@ -18,18 +22,7 @@ public class RideLineToStationCriterion implements Criterion {
 
     @Override
     public boolean isFulfilled(ServerPlayer player) {
-        TscStatus.ClientState state = TscStatus.getClientState(player);
-        boolean lineFulfilled = state != null && state.line() != null && MtrNameUtil.matches(lineName, state.line());
-        if (!lineFulfilled) return false;
-
-        boolean stationFulfilled = false;
-        for (var station : state.stations()) {
-            if (MtrNameUtil.matches(stationName, station)) {
-                stationFulfilled = true;
-                break;
-            }
-        }
-        return stationFulfilled;
+        throw new UnsupportedOperationException("Use stateful instance");
     }
 
     @Override
@@ -38,5 +31,10 @@ public class RideLineToStationCriterion implements Criterion {
             .append(Component.literal(lineName).withStyle(ChatFormatting.GREEN).withStyle(ChatFormatting.BOLD))
             .append(Component.literal(" to ").withStyle(ChatFormatting.GRAY))
             .append(Component.literal(stationName).withStyle(ChatFormatting.GOLD).withStyle(ChatFormatting.BOLD));
+    }
+
+    @Override
+    public Criterion createStatefulInstance() {
+        return new RisingEdgeAndConditionCriterion(new VisitStationCriterion(stationName), new RideLineCriterion(lineName), this);
     }
 }

@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Simulator.class)
+@Mixin(value = Simulator.class, remap = false)
 public class SimulatorMixin {
 
     @Unique

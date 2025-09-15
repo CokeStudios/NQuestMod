@@ -17,7 +17,7 @@ public class RideLineCriterion implements Criterion {
     @Override
     public boolean isFulfilled(ServerPlayer player) {
         TscStatus.ClientState state = TscStatus.getClientState(player);
-        return state != null && state.line() != null && MtrNameUtil.matches(lineName, state.line());
+        return state != null && state.line() != null && (lineName.isEmpty() || MtrNameUtil.matches(lineName, state.line()));
     }
 
     @Override

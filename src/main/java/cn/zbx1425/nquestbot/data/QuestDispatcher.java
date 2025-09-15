@@ -1,6 +1,5 @@
 package cn.zbx1425.nquestbot.data;
 
-import cn.zbx1425.nquestbot.data.criteria.Criterion;
 import cn.zbx1425.nquestbot.data.quest.Quest;
 import cn.zbx1425.nquestbot.data.quest.Step;
 import cn.zbx1425.nquestbot.data.quest.PlayerProfile;
@@ -40,14 +39,10 @@ public class QuestDispatcher {
                 }
 
                 Step currentStep = quest.steps.get(progress.currentStepIndex);
-                if (currentStep.needsManualTrigger) {
-                    continue; // Needs manual trigger, advance logic is in handleManualTrigger
-                }
-
                 ServerPlayer status = playerGetter.apply(profile.playerUuid);
                 if (status == null) continue; // Player might not be online, but has active quest
 
-                if (areAllCriteriaFulfilled(currentStep, status)) {
+                if (checkCriteriaFulfilled(progress, currentStep, status, false)) {
                     advanceQuestStep(profile, progress, quest);
                 }
             }
@@ -66,23 +61,10 @@ public class QuestDispatcher {
 
             Step currentStep = quest.steps.get(progress.currentStepIndex);
 
-            if (currentStep.needsManualTrigger && currentStep.id.equals(triggerStepId)) {
-                // Check if all other criteria for this step are met
-                if (areAllCriteriaFulfilled(currentStep, player)) {
-                    advanceQuestStep(profile, progress, quest);
-                    return; // Assume one trigger per call
-                }
+            if (currentStep.id.equals(triggerStepId) && checkCriteriaFulfilled(progress, currentStep, player, true)) {
+                advanceQuestStep(profile, progress, quest);
             }
         }
-    }
-
-    private boolean areAllCriteriaFulfilled(Step step, ServerPlayer player) {
-        for (Criterion criterion : step.criteria) {
-            if (!criterion.isFulfilled(player)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     public void startQuest(UUID playerUuid, String questId) {
@@ -141,6 +123,21 @@ public class QuestDispatcher {
         } else {
             // Advance to next step
             progress.stepStartTimes.put(progress.currentStepIndex, now);
+        }
+    }
+
+    private boolean checkCriteriaFulfilled(QuestProgress progress, Step step, ServerPlayer player, boolean doTrigger) {
+        if (progress.currentStepStatefulCriteria == null) {
+            progress.currentStepStatefulCriteria = step.createStatefulCriteria();
+        }
+        if (doTrigger) {
+            progress.currentStepStatefulCriteria.propagateManualTrigger();
+        }
+        if (progress.currentStepStatefulCriteria.isFulfilled(player)) {
+            progress.currentStepStatefulCriteria = null; // Reset for next step
+            return true;
+        } else {
+            return false;
         }
     }
 }

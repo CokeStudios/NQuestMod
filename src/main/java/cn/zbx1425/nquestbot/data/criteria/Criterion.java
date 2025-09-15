@@ -8,4 +8,12 @@ public interface Criterion {
     boolean isFulfilled(ServerPlayer player);
 
     Component getDisplayRepr();
+
+    default Criterion createStatefulInstance() {
+        return this; // Default to stateless
+    }
+
+    default void propagateManualTrigger() {
+
+    }
 }
