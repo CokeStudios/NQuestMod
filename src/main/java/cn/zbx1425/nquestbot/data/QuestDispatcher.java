@@ -1,27 +1,27 @@
 package cn.zbx1425.nquestbot.data;
 
+import cn.zbx1425.nquestbot.data.ranking.QuestUserDatabase;
 import cn.zbx1425.nquestbot.data.quest.Quest;
 import cn.zbx1425.nquestbot.data.quest.Step;
 import cn.zbx1425.nquestbot.data.quest.PlayerProfile;
 import cn.zbx1425.nquestbot.data.quest.QuestCompletionData;
 import cn.zbx1425.nquestbot.data.quest.QuestProgress;
-import cn.zbx1425.nquestbot.data.ranking.RankingManager;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.sql.SQLException;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class QuestDispatcher {
 
     private final IQuestCallbacks callback;
-    private final RankingManager rankingManager;
+    private final QuestUserDatabase databaseManager;
     public Map<String, Quest> quests;
     public final Map<UUID, PlayerProfile> playerProfiles = new HashMap<>();
 
-    public QuestDispatcher(IQuestCallbacks callback, RankingManager rankingManager) {
+    public QuestDispatcher(IQuestCallbacks callback, QuestUserDatabase databaseManager) {
         this.callback = callback;
-        this.rankingManager = rankingManager;
+        this.databaseManager = databaseManager;
         this.quests = Map.of();
     }
 
@@ -118,8 +118,10 @@ public class QuestDispatcher {
             profile.activeQuests.remove(progress.questId);
 
             QuestCompletionData completionData = new QuestCompletionData();
+            completionData.questId = quest.id;
             completionData.completionTime = now;
             completionData.durationMillis = now - progress.questStartTime;
+            completionData.questPoints = quest.questPoints;
             
             // Calculate and store step durations
             completionData.stepDurations = new HashMap<>();
@@ -131,13 +133,12 @@ public class QuestDispatcher {
                 lastTimestamp = stepEndTimestamp;
             }
 
-            profile.completedQuests.put(progress.questId, completionData);
-            profile.totalQuestPoints += quest.questPoints;
-
             callback.onQuestCompleted(this, profile.playerUuid, quest, completionData);
-            if (rankingManager != null) {
-                rankingManager.onQuestCompleted(profile.playerUuid, player.getGameProfile().getName(),
-                        profile.totalQuestPoints, quest, completionData);
+            try {
+                databaseManager.addQuestCompletion(profile.playerUuid, quest, completionData);
+            } catch (SQLException e) {
+                // Let's hope this doesn't happen.
+                throw new RuntimeException(e);
             }
         } else {
             // Advance to next step

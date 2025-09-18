@@ -2,8 +2,7 @@ package cn.zbx1425.nquestbot;
 
 import cn.zbx1425.nquestbot.data.QuestDispatcher;
 import cn.zbx1425.nquestbot.data.QuestPersistence;
-import cn.zbx1425.nquestbot.data.ranking.RankingManager;
-import cn.zbx1425.nquestbot.gui.GuiManager;
+import cn.zbx1425.nquestbot.data.ranking.QuestUserDatabase;
 import cn.zbx1425.nquestbot.interop.TscStatus;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.resources.ResourceLocation;
@@ -20,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.SQLException;
 
 public class NQuestBot implements ModInitializer {
 
@@ -27,10 +27,9 @@ public class NQuestBot implements ModInitializer {
     public static NQuestBot INSTANCE;
 
     public QuestPersistence questStorage;
+    public QuestUserDatabase userDatabase;
     public QuestDispatcher questDispatcher;
     public QuestNotifications questNotifications;
-    public RankingManager rankingManager;
-    public GuiManager guiManager;
 
     @Override
     public void onInitialize() {
@@ -42,13 +41,17 @@ public class NQuestBot implements ModInitializer {
                 Files.createDirectories(basePath);
                 // Well this isn't clean but we only have one server instance anyway
                 questStorage = new QuestPersistence(basePath);
+                userDatabase = new QuestUserDatabase(basePath.resolve("user.db"));
                 questNotifications = new QuestNotifications(server);
-                rankingManager = new RankingManager(basePath.resolve("ranking.json"));
-                questDispatcher = new QuestDispatcher(questNotifications, rankingManager);
+                questDispatcher = new QuestDispatcher(questNotifications, userDatabase);
                 questDispatcher.quests = questStorage.loadQuestDefinitions();
-                guiManager = new GuiManager(this);
-            } catch (IOException ex) {
-                LOGGER.error("Failed to initialize quest storage", ex);
+            } catch (IOException | SQLException ex) {
+                LOGGER.error("Failed to initialize NQuestBot", ex);
+            }
+        });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            if (userDatabase != null) {
+                userDatabase.close();
             }
         });
 
@@ -56,9 +59,9 @@ public class NQuestBot implements ModInitializer {
             ServerPlayer player = packetListener.getPlayer();
             try {
                 questDispatcher.playerProfiles.put(player.getGameProfile().getId(),
-                        questStorage.loadPlayerProfile(player.getGameProfile().getId()));
+                        userDatabase.loadPlayerProfile(player.getGameProfile().getId()));
                 questNotifications.onPlayerJoin(questDispatcher, player.getGameProfile().getId());
-            } catch (IOException ex) {
+            } catch (SQLException ex) {
                 LOGGER.error("Failed to load player profile for {}", player.getGameProfile().getName(), ex);
             }
         });
@@ -68,8 +71,8 @@ public class NQuestBot implements ModInitializer {
             PlayerProfile profile = questDispatcher.playerProfiles.remove(player.getGameProfile().getId());
             if (profile != null) {
                 try {
-                    questStorage.savePlayerProfile(profile);
-                } catch (IOException ex) {
+                    userDatabase.savePlayerProfile(profile);
+                } catch (SQLException ex) {
                     LOGGER.error("Failed to save player profile for {}", player.getGameProfile().getName(), ex);
                 }
             }

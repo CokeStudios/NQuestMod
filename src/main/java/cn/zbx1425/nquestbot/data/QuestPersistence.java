@@ -28,27 +28,6 @@ public class QuestPersistence {
         this.basePath = basePath;
     }
 
-    public void savePlayerProfile(PlayerProfile profile) throws IOException {
-        Path profilePath = basePath.resolve("profiles").resolve(profile.playerUuid + ".json");
-        Files.createDirectories(profilePath.getParent());
-        try (Writer writer = Files.newBufferedWriter(profilePath)) {
-            GSON.toJson(profile, writer);
-        }
-    }
-
-    public PlayerProfile loadPlayerProfile(UUID playerUuid) throws IOException {
-        Path profilePath = basePath.resolve("profiles").resolve(playerUuid + ".json");
-        if (!Files.exists(profilePath)) {
-            // Return a new profile if one doesn't exist
-            PlayerProfile newProfile = new PlayerProfile(playerUuid);
-            newProfile.playerUuid = playerUuid;
-            return newProfile;
-        }
-        try (Reader reader = Files.newBufferedReader(profilePath)) {
-            return GSON.fromJson(reader, PlayerProfile.class);
-        }
-    }
-
     public void saveQuestDefinition(Quest quest) throws IOException {
         Path questPath = basePath.resolve("quests").resolve(quest.id + ".json");
         Files.createDirectories(questPath.getParent());
@@ -82,5 +61,13 @@ public class QuestPersistence {
 
     public static Quest deserializeQuest(String json) throws Exception {
         return GSON.fromJson(json, Quest.class);
+    }
+
+    public static String serializePlayerProfile(PlayerProfile profile) {
+        return GSON.toJson(profile);
+    }
+
+    public static PlayerProfile deserializePlayerProfile(String json) throws Exception {
+        return GSON.fromJson(json, PlayerProfile.class);
     }
 }

@@ -4,12 +4,12 @@ import java.util.UUID;
 
 public class QuestTimeEntry {
     public UUID playerUuid;
-    public String playerName;
+    public String questId;
     public long durationMillis;
 
-    public QuestTimeEntry(UUID playerUuid, String playerName, long durationMillis) {
+    public QuestTimeEntry(UUID playerUuid, String questId, long durationMillis) {
         this.playerUuid = playerUuid;
-        this.playerName = playerName;
+        this.questId = questId;
         this.durationMillis = durationMillis;
     }
 
@@ -17,8 +17,8 @@ public class QuestTimeEntry {
         return playerUuid;
     }
 
-    public String getPlayerName() {
-        return playerName;
+    public String getQuestId() {
+        return questId;
     }
 
     public long getDurationMillis() {
