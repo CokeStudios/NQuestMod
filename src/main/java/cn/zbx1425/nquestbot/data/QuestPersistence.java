@@ -2,14 +2,17 @@ package cn.zbx1425.nquestbot.data;
 
 import cn.zbx1425.nquestbot.NQuestBot;
 import cn.zbx1425.nquestbot.data.quest.Quest;
+import cn.zbx1425.nquestbot.data.quest.QuestCategory;
 import cn.zbx1425.nquestbot.data.criteria.CriteriaRegistry;
 import cn.zbx1425.nquestbot.data.quest.PlayerProfile;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -36,6 +39,11 @@ public class QuestPersistence {
         }
     }
 
+    public void removeQuestDefinition(String questId) throws IOException {
+        Path questPath = basePath.resolve("quests").resolve(questId + ".json");
+        Files.deleteIfExists(questPath);
+    }
+
     public Map<String, Quest> loadQuestDefinitions() throws IOException {
         Path questsDir = basePath.resolve("quests");
         Map<String, Quest> quests = new HashMap<>();
@@ -55,6 +63,27 @@ public class QuestPersistence {
         return quests;
     }
 
+    public Map<String, QuestCategory> loadQuestCategories() throws IOException {
+        Path categoriesFile = basePath.resolve("categories.json");
+        if (!Files.exists(categoriesFile)) {
+            return new HashMap<>();
+        }
+        try (Reader reader = Files.newBufferedReader(categoriesFile)) {
+            Type mapType = new TypeToken<Map<String, QuestCategory>>() {}.getType();
+            Map<String, QuestCategory> categories = GSON.fromJson(reader, mapType);
+            if (categories == null) return new HashMap<>();
+            return new HashMap<>(categories);
+        }
+    }
+
+    public void saveQuestCategories(Map<String, QuestCategory> categories) throws IOException {
+        Path categoriesFile = basePath.resolve("categories.json");
+        Files.createDirectories(categoriesFile.getParent());
+        try (Writer writer = Files.newBufferedWriter(categoriesFile)) {
+            GSON.toJson(categories, writer);
+        }
+    }
+
     public static String serializeQuest(Quest quest) {
         return GSON.toJson(quest);
     }
@@ -69,5 +98,14 @@ public class QuestPersistence {
 
     public static PlayerProfile deserializePlayerProfile(String json) throws Exception {
         return GSON.fromJson(json, PlayerProfile.class);
+    }
+
+    public static String serializeCategories(Map<String, QuestCategory> categories) {
+        return GSON.toJson(categories);
+    }
+
+    public static Map<String, QuestCategory> deserializeCategories(String json) throws Exception {
+        Type mapType = new TypeToken<Map<String, QuestCategory>>() {}.getType();
+        return GSON.fromJson(json, mapType);
     }
 }

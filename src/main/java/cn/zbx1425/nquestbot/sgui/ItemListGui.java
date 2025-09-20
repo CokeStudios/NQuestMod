@@ -1,6 +1,7 @@
 package cn.zbx1425.nquestbot.sgui;
 
 import cn.zbx1425.nquestbot.NQuestBot;
+import eu.pb4.sgui.api.elements.GuiElement;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.BaseSlotGui;
 import net.minecraft.network.chat.Component;
@@ -72,7 +73,7 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
                     })
                 );
             } else {
-                clearSlot(9 * (rowContentEnds + 1) + 5);
+                setSlot(9 * (rowContentEnds + 1) + 5, FOOTER_FILLER);
             }
             if ((page + 1) * pageSize < totalSize) {
                 setSlot(9 * (rowContentEnds + 1) + 7, new GuiElementBuilder(Items.PAPER)
@@ -87,7 +88,7 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
                     })
                 );
             } else {
-                clearSlot(9 * (rowContentEnds + 1) + 7);
+                setSlot(9 * (rowContentEnds + 1) + 7, FOOTER_FILLER);
             }
             if (totalSize > pageSize) {
                 Component pageInfo = totalSize == 99999
@@ -98,7 +99,7 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
                     .setName(pageInfo)
                 );
             } else {
-                clearSlot(9 * (rowContentEnds + 1) + 6);
+                setSlot(9 * (rowContentEnds + 1) + 6, FOOTER_FILLER);
             }
             isLoading.set(false);
         })).exceptionally(ex -> {
@@ -113,6 +114,18 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
             isLoading.set(false);
             return null;
         });
+    }
+
+    protected static final GuiElement HEADER_FILLER = new GuiElementBuilder(Items.GRAY_STAINED_GLASS_PANE).hideFlags().setName(Component.empty()).build();
+    protected static final GuiElement FOOTER_FILLER = new GuiElementBuilder(Items.BLACK_STAINED_GLASS_PANE).hideFlags().setName(Component.empty()).build();
+
+    protected void fillHeaderFooter() {
+        for (int slot = 0; slot < rowContentStarts * 9; slot++) {
+            if (getSlot(slot) == null) setSlot(slot, HEADER_FILLER);
+        }
+        for (int slot = (rowContentEnds + 1) * 9; slot < height * 9; slot++) {
+            if (getSlot(slot) == null) setSlot(slot, FOOTER_FILLER);
+        }
     }
 
     protected abstract CompletableFuture<Pair<List<TItem>, Integer>> supplyItems(int offset, int limit);

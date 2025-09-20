@@ -29,6 +29,12 @@ public class QuestHistoryScreen extends ItemListGui<QuestCompletionData> {
     }
 
     @Override
+    public void init() {
+        super.init();
+        fillHeaderFooter();
+    }
+
+    @Override
     protected CompletableFuture<Pair<List<QuestCompletionData>, Integer>> supplyItems(int offset, int limit) {
         return CompletableFuture.supplyAsync(() -> {
             try {

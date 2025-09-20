@@ -2,8 +2,9 @@ package cn.zbx1425.nquestbot;
 
 import cn.zbx1425.nquestbot.data.QuestDispatcher;
 import cn.zbx1425.nquestbot.data.QuestPersistence;
+import cn.zbx1425.nquestbot.data.quest.QuestCategory;
 import cn.zbx1425.nquestbot.data.ranking.QuestUserDatabase;
-import cn.zbx1425.nquestbot.sgui.GuiManager;
+import cn.zbx1425.nquestbot.sgui.GuiStarter;
 import cn.zbx1425.nquestbot.interop.TscStatus;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.resources.ResourceLocation;
@@ -21,6 +22,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class NQuestBot implements ModInitializer {
 
@@ -31,7 +34,7 @@ public class NQuestBot implements ModInitializer {
     public QuestUserDatabase userDatabase;
     public QuestDispatcher questDispatcher;
     public QuestNotifications questNotifications;
-    public GuiManager guiManager;
+    public Map<String, QuestCategory> questCategories = new HashMap<>();
 
     @Override
     public void onInitialize() {
@@ -41,13 +44,14 @@ public class NQuestBot implements ModInitializer {
             try {
                 Path basePath = server.getWorldPath(LevelResource.ROOT).resolve("quest_bot");
                 Files.createDirectories(basePath);
-                // Well this isn't clean but we only have one server instance anyway
+
                 questStorage = new QuestPersistence(basePath);
+                questCategories = questStorage.loadQuestCategories();
+
                 userDatabase = new QuestUserDatabase(basePath.resolve("user.db"));
                 questNotifications = new QuestNotifications(server);
                 questDispatcher = new QuestDispatcher(questNotifications, userDatabase);
                 questDispatcher.quests = questStorage.loadQuestDefinitions();
-                guiManager = new GuiManager(this);
             } catch (IOException | SQLException ex) {
                 LOGGER.error("Failed to initialize NQuestBot", ex);
             }
@@ -55,6 +59,13 @@ public class NQuestBot implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             if (userDatabase != null) {
                 userDatabase.close();
+            }
+            if (questStorage != null && questCategories != null) {
+                try {
+                    questStorage.saveQuestCategories(questCategories);
+                } catch (IOException e) {
+                    LOGGER.error("Failed to save quest categories", e);
+                }
             }
         });
 

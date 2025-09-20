@@ -55,6 +55,7 @@ public class LeaderboardScreen extends TabbedItemListGui<Object, LeaderboardScre
             return;
         }
         super.init();
+        fillHeaderFooter();
     }
 
     @Override

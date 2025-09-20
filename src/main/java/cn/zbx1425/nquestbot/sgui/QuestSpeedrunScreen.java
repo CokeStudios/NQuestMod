@@ -56,6 +56,8 @@ public class QuestSpeedrunScreen extends TabbedItemListGui<QuestCompletionData, 
                 .setLore(quest.formatDescription())
         );
         setSlot(8, LeaderboardScreen.SECONDARY_TABS.get(isMonthly ? 1 : 0).getRight().get());
+
+        fillHeaderFooter();
     }
 
     @Override

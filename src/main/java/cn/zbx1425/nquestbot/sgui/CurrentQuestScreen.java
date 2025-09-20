@@ -54,6 +54,7 @@ public class CurrentQuestScreen extends ItemListGui<Step> {
                             (gui) -> {
                                 try {
                                     NQuestBot.INSTANCE.questDispatcher.stopQuests(player.getGameProfile().getId());
+                                    gui.shouldJustClose = true;
                                 } catch (QuestException e) {
                                     player.sendSystemMessage(e.getDisplayRepr(), false);
                                 }
@@ -61,6 +62,8 @@ public class CurrentQuestScreen extends ItemListGui<Step> {
                     ).open();
                 })
         );
+
+        fillHeaderFooter();
     }
 
     @Override

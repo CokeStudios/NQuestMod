@@ -3,7 +3,8 @@ package cn.zbx1425.nquestbot;
 import cn.zbx1425.nquestbot.data.QuestException;
 import cn.zbx1425.nquestbot.data.QuestPersistence;
 import cn.zbx1425.nquestbot.data.quest.Quest;
-import cn.zbx1425.nquestbot.sgui.CurrentQuestScreen;
+import cn.zbx1425.nquestbot.data.quest.QuestCategory;
+import cn.zbx1425.nquestbot.sgui.GuiStarter;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -16,6 +17,7 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -26,12 +28,12 @@ public class Commands {
                                 BiFunction<String, ArgumentType<?>, RequiredArgumentBuilder<CommandSourceStack, ?>> argument) {
         dispatcher.register(literal.apply("nquest")
             .executes(ctx -> {
-                NQuestBot.INSTANCE.guiManager.openEntry(ctx.getSource().getPlayerOrException());
+                GuiStarter.openEntry(ctx.getSource().getPlayerOrException());
                 return 1;
             })
             .then(literal.apply("start")
+                .requires(source -> source.hasPermission(2))
                 .then(argument.apply("participant", EntityArgument.player())
-                    .requires(source -> source.hasPermission(2))
                     .then(argument.apply("quest_id", StringArgumentType.string())
                         .executes(ctx -> {
                             startQuest(EntityArgument.getPlayer(ctx, "participant"), StringArgumentType.getString(ctx, "quest_id"));
@@ -97,6 +99,55 @@ public class Commands {
                         })
                     )
                 )
+                .then(literal.apply("remove")
+                    .then(argument.apply("quest_id", StringArgumentType.string())
+                        .executes(ctx -> {
+                            String questId = StringArgumentType.getString(ctx, "quest_id");
+                            removeQuestDefinition(questId);
+                            Component message = Component.literal("Quest definition removed: ")
+                                .append(Component.literal(questId).withStyle(net.minecraft.ChatFormatting.AQUA));
+                            ctx.getSource().sendSuccess(() -> message, false);
+                            return 1;
+                        })
+                    )
+                )
+            )
+            .then(literal.apply("categories")
+                .requires(source -> source.hasPermission(3))
+                .then(literal.apply("set")
+                    .then(argument.apply("json", StringArgumentType.greedyString())
+                        .executes(ctx -> {
+                            try {
+                                Map<String, QuestCategory> categories = QuestPersistence.deserializeCategories(StringArgumentType.getString(ctx, "json"));
+                                NQuestBot.INSTANCE.questCategories.clear();
+                                NQuestBot.INSTANCE.questCategories.putAll(categories);
+                                NQuestBot.INSTANCE.questStorage.saveQuestCategories(NQuestBot.INSTANCE.questCategories);
+                            } catch (Exception ex) {
+                                NQuestBot.LOGGER.error("Failed to parse or save categories", ex);
+                                throw new SimpleCommandExceptionType(Component.literal("Failed to parse or save categories: " + ex)).create();
+                            }
+                            ctx.getSource().sendSuccess(() -> Component.literal("Quest categories updated."), false);
+                            return 1;
+                        })
+                    )
+                )
+                .then(literal.apply("get")
+                    .executes(ctx -> {
+                        String categoriesJson = QuestPersistence.serializeCategories(NQuestBot.INSTANCE.questCategories);
+                        Component message = Component.literal("Quest Categories JSON Data: ")
+                            .append(Component.literal("[Click to copy]").withStyle(style ->
+                                style.withUnderlined(true)
+                                    .withClickEvent(new net.minecraft.network.chat.ClickEvent(
+                                        net.minecraft.network.chat.ClickEvent.Action.COPY_TO_CLIPBOARD, categoriesJson))
+                                    .withHoverEvent(new net.minecraft.network.chat.HoverEvent(
+                                        net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT,
+                                        Component.literal("Click to copy to clipboard")))
+                                    .withColor(net.minecraft.ChatFormatting.AQUA)
+                            ));
+                        ctx.getSource().sendSuccess(() -> message, false);
+                        return 1;
+                    })
+                )
             )
         );
     }
@@ -139,6 +190,17 @@ public class Commands {
             return quest;
         } catch (Exception ex) {
             throw new SimpleCommandExceptionType(Component.literal("Failed to parse or save quest definition: " + ex)).create();
+        }
+    }
+
+    private static void removeQuestDefinition(String questId) throws CommandSyntaxException {
+        if (NQuestBot.INSTANCE.questDispatcher.quests.remove(questId) == null) {
+            throw new QuestException(QuestException.Type.QUEST_NOT_FOUND).createMinecraftException();
+        }
+        try {
+            NQuestBot.INSTANCE.questStorage.removeQuestDefinition(questId);
+        } catch (Exception ex) {
+            throw new SimpleCommandExceptionType(Component.literal("Failed to delete quest definition: " + ex)).create();
         }
     }
 }

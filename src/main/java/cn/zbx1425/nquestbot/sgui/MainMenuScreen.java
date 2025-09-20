@@ -24,13 +24,22 @@ public class MainMenuScreen extends SimpleGui {
         if (profile == null) return;
 
         // Start a Quest
-        setSlot(11, new GuiElementBuilder(Items.WRITABLE_BOOK)
+        if (!profile.activeQuests.isEmpty()) {
+            // Current Quest
+            setSlot(11, new GuiElementBuilder(Items.COMPASS)
+                .setName(Component.literal("Current Quest"))
+                .addLoreLine(Component.literal("View your active quest progress.").withStyle(ChatFormatting.GRAY))
+                .setCallback((index, type, action) -> new CurrentQuestScreen(player, this).open())
+            );
+        } else {
+            setSlot(11, new GuiElementBuilder(Items.WRITABLE_BOOK)
                 .setName(Component.literal("Start a Quest"))
                 .addLoreLine(Component.literal("View and start available quests.").withStyle(ChatFormatting.GRAY))
                 .setCallback((index, type, action) -> {
                     new QuestListScreen(player, this, this::openStartQuestConfirmation).open();
                 })
-        );
+            );
+        }
 
         // Leaderboards
         setSlot(13, new GuiElementBuilder(Items.SPYGLASS)
@@ -50,15 +59,6 @@ public class MainMenuScreen extends SimpleGui {
                     new ProfileScreen(player, this).open();
                 })
         );
-
-        if (!profile.activeQuests.isEmpty()) {
-            // Current Quest
-            setSlot(4, new GuiElementBuilder(Items.COMPASS)
-                    .setName(Component.literal("Current Quest"))
-                    .addLoreLine(Component.literal("View your active quest progress.").withStyle(ChatFormatting.GRAY))
-                    .setCallback((index, type, action) -> new CurrentQuestScreen(player, this).open())
-            );
-        }
     }
 
     
@@ -70,6 +70,7 @@ public class MainMenuScreen extends SimpleGui {
                 (gui) -> {
                     try {
                         NQuestBot.INSTANCE.questDispatcher.startQuest(player.getGameProfile().getId(), quest.id);
+                        gui.shouldJustClose = true;
                     } catch (QuestException e) {
                         player.sendSystemMessage(e.getDisplayRepr(), false);
                     }

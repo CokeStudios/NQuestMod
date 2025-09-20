@@ -53,6 +53,8 @@ public class QuestCompletionDetailScreen extends ItemListGui<Map.Entry<Integer, 
         setSlot(8, new GuiElementBuilder(Items.CLOCK)
                 .setName(Component.literal("Total Time: " + String.format("%.2f s", completionData.durationMillis / 1000.0)))
         );
+
+        fillHeaderFooter();
     }
 
     @Override

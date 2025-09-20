@@ -12,10 +12,12 @@ import java.util.function.Consumer;
 
 public class DialogGui extends ParentedGui {
 
+    public boolean shouldJustClose = false;
+
     public DialogGui(ServerPlayer player, BaseSlotGui parent,
                      Component title,
                      @Nullable GuiElementBuilder centerDisplay,
-                     Consumer<BaseSlotGui> onConfirm) {
+                     Consumer<DialogGui> onConfirm) {
         super(MenuType.GENERIC_9x3, player, parent);
         setTitle(title);
 
@@ -34,5 +36,11 @@ public class DialogGui extends ParentedGui {
                     close();
                 })
         );
+    }
+
+    @Override
+    public void onClose() {
+        if (shouldJustClose) return;
+        super.onClose();
     }
 }
