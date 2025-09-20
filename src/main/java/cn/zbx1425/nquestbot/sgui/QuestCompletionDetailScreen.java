@@ -6,6 +6,7 @@ import cn.zbx1425.nquestbot.data.quest.QuestCompletionData;
 import cn.zbx1425.nquestbot.data.quest.Step;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.BaseSlotGui;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -79,7 +80,7 @@ public class QuestCompletionDetailScreen extends ItemListGui<Map.Entry<Integer, 
 
         return new GuiElementBuilder(Items.CLOCK)
                 .setName(stepName)
-                .setLore(List.of(Component.literal("Duration: " + timeStr)))
+                .addLoreLine(Component.literal("Duration: " + timeStr).withStyle(ChatFormatting.GOLD))
                 .setCount(stepIndex + 1);
     }
 

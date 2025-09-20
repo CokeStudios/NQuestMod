@@ -4,6 +4,7 @@ import cn.zbx1425.nquestbot.NQuestBot;
 import cn.zbx1425.nquestbot.data.quest.PlayerProfile;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.BaseSlotGui;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.MenuType;
@@ -35,19 +36,19 @@ public class ProfileScreen extends ParentedGui {
         // Total Quest Points
         setSlot(11, new GuiElementBuilder(Items.EXPERIENCE_BOTTLE)
                 .setName(Component.literal("Total Quest Points"))
-                .setLore(List.of(Component.literal(String.valueOf(profile.totalQuestPoints))))
+                .addLoreLine(Component.literal(String.valueOf(profile.totalQuestPoints)).withStyle(ChatFormatting.GREEN))
         );
 
         // Total Quests Completed
         setSlot(13, new GuiElementBuilder(Items.EMERALD)
                 .setName(Component.literal("Total Quests Completed"))
-                .setLore(List.of(Component.literal(String.valueOf(profile.totalQuestCompletions))))
+                .addLoreLine(Component.literal(String.valueOf(profile.totalQuestCompletions)).withStyle(ChatFormatting.GREEN))
         );
 
         // Quest History
         setSlot(15, new GuiElementBuilder(Items.CLOCK)
                 .setName(Component.literal("Quest History"))
-                .setLore(List.of(Component.literal("View your past quest completions.")))
+                .addLoreLine(Component.literal("View your past quest completions.").withStyle(ChatFormatting.GRAY))
                 .setCallback((index, type, action) -> {
                     new QuestHistoryScreen(player, this).open();
                 })

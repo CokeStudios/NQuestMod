@@ -34,7 +34,7 @@ public class QuestSpeedrunScreen extends TabbedItemListGui<QuestCompletionData, 
         );
         this.quest = quest;
         this.isMonthly = isMonthly;
-        setTitle(Component.literal("Speedruns"));
+        setTitle(Component.literal("Leaderboards - Speedruns"));
         init();
     }
 
@@ -78,8 +78,8 @@ public class QuestSpeedrunScreen extends TabbedItemListGui<QuestCompletionData, 
         final String timeStr = String.format("%d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60);
 
         return buildPlayerEntry(player.getServer(), item.playerUuid, p ->
-                Component.literal("#" + rank + " " + p + " - " + timeStr))
-                .addLoreLine(Component.empty())
+            Component.literal("#" + rank + " " + p))
+                .addLoreLine(Component.literal(timeStr).withStyle(ChatFormatting.GOLD))
                 .addLoreLine(Component.literal("Click for details").withStyle(ChatFormatting.GRAY))
                 .setCallback((i, t, a) -> {
                     new QuestCompletionDetailScreen(player, this, item).open();

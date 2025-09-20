@@ -34,7 +34,7 @@ public class QuestHistoryScreen extends ItemListGui<QuestCompletionData> {
             try {
                 List<QuestCompletionData> history = NQuestBot.INSTANCE.userDatabase
                         .getPlayerQuestHistory(player.getGameProfile().getId(), limit, offset);
-                return Pair.of(history, 99999); // Assume there's always more for history
+                return Pair.of(history, history.size() < limit ? history.size() : 99999); // Assume there's always more for history
             } catch (SQLException e) {
                 NQuestBot.LOGGER.error("Failed to load player quest history", e);
                 return Pair.of(List.of(), 0);
@@ -50,10 +50,12 @@ public class QuestHistoryScreen extends ItemListGui<QuestCompletionData> {
 
         return new GuiElementBuilder(Items.BOOK)
                 .setName(Component.literal(questName))
-                .addLoreLine(Component.literal("Completed on: " + dateFormat.format(new Date(item.completionTime))))
-                .addLoreLine(Component.literal(String.format("Duration: %d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60)))
-                .addLoreLine(Component.literal("QP Awarded: " + item.questPoints))
-                .addLoreLine(Component.empty())
+                .addLoreLine(Component.literal("Completed on: ").append(
+                    Component.literal(dateFormat.format(new Date(item.completionTime))).withStyle(ChatFormatting.GOLD)))
+                .addLoreLine(Component.literal("Duration: ").append(
+                    Component.literal(String.format("%d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60)).withStyle(ChatFormatting.AQUA)))
+                .addLoreLine(Component.literal("QP Awarded: ").append(
+                    Component.literal(String.valueOf(item.questPoints)).withStyle(ChatFormatting.GREEN)))
                 .addLoreLine(Component.literal("Click for details").withStyle(ChatFormatting.GRAY))
                 .setCallback((i, t, a) -> {
                     new QuestCompletionDetailScreen(player, this, item).open();

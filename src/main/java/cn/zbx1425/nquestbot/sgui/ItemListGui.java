@@ -11,6 +11,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class ItemListGui<TItem> extends ParentedGui {
 
@@ -18,6 +20,10 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
     protected int rowContentEnds;
 
     protected int page = 0;
+
+    private final AtomicBoolean isLoading = new AtomicBoolean(false);
+    // I haven't pinpointed the real reason behind the syncing issue, so here's a simple cooldown timer
+    private CompletableFuture<Void> pageCooldown = CompletableFuture.completedFuture(null);
 
     public ItemListGui(MenuType<?> type, ServerPlayer player, BaseSlotGui parent) {
         super(type, player, parent);
@@ -29,6 +35,7 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
     public void init() {
         super.init();
 
+        isLoading.set(true);
         int pageSize = (rowContentEnds - rowContentStarts + 1) * 9;
         int offset = page * pageSize;
         CompletableFuture<Pair<List<TItem>, Integer>> pageItemsFuture = supplyItems(offset, pageSize);
@@ -40,6 +47,7 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
                 .setName(Component.literal("Loading...")));
         }
         pageItemsFuture.thenAccept(pageItemsAndSize -> getPlayer().getServer().execute(() -> {
+            clearSlot((int)Math.ceil((rowContentStarts + rowContentEnds) / 2.0) * 9 + 4);
             List<TItem> pageItems = pageItemsAndSize.getLeft();
             int totalSize = pageItemsAndSize.getRight();
             for (int slot = rowContentStarts * 9; slot < (rowContentEnds + 1) * 9; slot++) {
@@ -56,6 +64,9 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
                     .setName(Component.literal("<<<<"))
                     .setCount(page)
                     .setCallback((index, type, action) -> {
+                        if (!pageCooldown.isDone()) return;
+                        if (!isLoading.compareAndSet(false, true)) return;
+                        pageCooldown = new CompletableFuture<Void>().completeOnTimeout(null, 500, TimeUnit.MILLISECONDS);
                         page--;
                         init();
                     })
@@ -68,6 +79,9 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
                     .setName(Component.literal(">>>>"))
                     .setCount(page + 2)
                     .setCallback((index, type, action) -> {
+                        if (!pageCooldown.isDone()) return;
+                        if (!isLoading.compareAndSet(false, true)) return;
+                        pageCooldown = new CompletableFuture<Void>().completeOnTimeout(null, 500, TimeUnit.MILLISECONDS);
                         page++;
                         init();
                     })
@@ -86,6 +100,7 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
             } else {
                 clearSlot(9 * (rowContentEnds + 1) + 6);
             }
+            isLoading.set(false);
         })).exceptionally(ex -> {
             NQuestBot.LOGGER.error("Error loading items for ItemListGui", ex);
             for (int slot = rowContentStarts * 9; slot < (rowContentEnds + 1) * 9; slot++) {
@@ -93,8 +108,9 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
             }
             setSlot((int)Math.ceil((rowContentStarts + rowContentEnds) / 2.0) * 9 + 4, new GuiElementBuilder(Items.BARRIER)
                 .setName(Component.literal("Error loading items"))
-                .setLore(List.of(Component.literal(ex.getMessage())))
+                .addLoreLine(Component.literal(ex.getMessage()))
             );
+            isLoading.set(false);
             return null;
         });
     }

@@ -6,6 +6,7 @@ import cn.zbx1425.nquestbot.data.ranking.PlayerQPEntry;
 import com.mojang.authlib.GameProfile;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.BaseSlotGui;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -98,8 +99,8 @@ public class LeaderboardScreen extends TabbedItemListGui<Object, LeaderboardScre
         if (playerUuid != null) {
             final int rank = page * ((rowContentEnds - rowContentStarts + 1) * 9) + index + 1;
             final String finalValue = value;
-            return buildPlayerEntry(player.getServer(), playerUuid, p ->
-                    Component.literal("#" + rank + " " + p + " - " + finalValue));
+            return buildPlayerEntry(player.getServer(), playerUuid, p -> Component.literal("#" + rank + " " + p))
+                .addLoreLine(Component.literal(finalValue).withStyle(ChatFormatting.GOLD));
         }
         return new GuiElementBuilder(Items.BARRIER).setName(Component.literal("Error"));
     }

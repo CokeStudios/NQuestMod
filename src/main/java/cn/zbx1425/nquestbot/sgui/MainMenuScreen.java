@@ -6,6 +6,7 @@ import cn.zbx1425.nquestbot.data.quest.PlayerProfile;
 import cn.zbx1425.nquestbot.data.quest.Quest;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.SimpleGui;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.MenuType;
@@ -25,7 +26,7 @@ public class MainMenuScreen extends SimpleGui {
         // Start a Quest
         setSlot(11, new GuiElementBuilder(Items.WRITABLE_BOOK)
                 .setName(Component.literal("Start a Quest"))
-                .setLore(List.of(Component.literal("View and start available quests.")))
+                .addLoreLine(Component.literal("View and start available quests.").withStyle(ChatFormatting.GRAY))
                 .setCallback((index, type, action) -> {
                     new QuestListScreen(player, this, this::openStartQuestConfirmation).open();
                 })
@@ -34,7 +35,7 @@ public class MainMenuScreen extends SimpleGui {
         // Leaderboards
         setSlot(13, new GuiElementBuilder(Items.SPYGLASS)
                 .setName(Component.literal("Leaderboards"))
-                .setLore(List.of(Component.literal("Check out the top players.")))
+                .addLoreLine(Component.literal("Check out the top players.").withStyle(ChatFormatting.GRAY))
                 .setCallback((index, type, action) -> {
                     new LeaderboardScreen(player, this).open();
                 })
@@ -43,7 +44,7 @@ public class MainMenuScreen extends SimpleGui {
         // My Profile
         setSlot(15, new GuiElementBuilder(Items.PLAYER_HEAD)
                 .setName(Component.literal("My Profile"))
-                .setLore(List.of(Component.literal("View your stats and quest history.")))
+                .addLoreLine(Component.literal("View your stats and quest history.").withStyle(ChatFormatting.GRAY))
                 .setSkullOwner(player.getGameProfile(), player.getServer())
                 .setCallback((index, type, action) -> {
                     new ProfileScreen(player, this).open();
@@ -54,7 +55,7 @@ public class MainMenuScreen extends SimpleGui {
             // Current Quest
             setSlot(4, new GuiElementBuilder(Items.COMPASS)
                     .setName(Component.literal("Current Quest"))
-                    .setLore(List.of(Component.literal("View your active quest progress.")))
+                    .addLoreLine(Component.literal("View your active quest progress.").withStyle(ChatFormatting.GRAY))
                     .setCallback((index, type, action) -> new CurrentQuestScreen(player, this).open())
             );
         }

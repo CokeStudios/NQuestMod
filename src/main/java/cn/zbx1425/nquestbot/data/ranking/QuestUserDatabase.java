@@ -144,7 +144,8 @@ public class QuestUserDatabase {
                     "FROM quest_completions WHERE completion_time >= ? " +
                     "GROUP BY player_uuid ORDER BY monthly_qp DESC LIMIT ?";
         } else {
-            sql = "SELECT player_uuid, total_quest_points FROM player_profiles ORDER BY total_quest_points DESC LIMIT ?";
+            sql = "SELECT player_uuid, total_quest_points FROM player_profiles " +
+                "WHERE total_quest_points > 0 ORDER BY total_quest_points DESC LIMIT ?";
         }
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             if (monthly) {
@@ -169,7 +170,8 @@ public class QuestUserDatabase {
                     "FROM quest_completions WHERE completion_time >= ? " +
                     "GROUP BY player_uuid ORDER BY monthly_completions DESC LIMIT ?";
         } else {
-            sql = "SELECT player_uuid, total_quest_completions FROM player_profiles ORDER BY total_quest_completions DESC LIMIT ?";
+            sql = "SELECT player_uuid, total_quest_completions FROM player_profiles " +
+                    "WHERE total_quest_completions > 0 ORDER BY total_quest_completions DESC LIMIT ?";
         }
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             if (monthly) {
