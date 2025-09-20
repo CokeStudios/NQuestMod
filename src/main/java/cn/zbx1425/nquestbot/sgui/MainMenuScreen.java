@@ -1,7 +1,9 @@
 package cn.zbx1425.nquestbot.sgui;
 
 import cn.zbx1425.nquestbot.NQuestBot;
+import cn.zbx1425.nquestbot.data.QuestException;
 import cn.zbx1425.nquestbot.data.quest.PlayerProfile;
+import cn.zbx1425.nquestbot.data.quest.Quest;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.SimpleGui;
 import net.minecraft.network.chat.Component;
@@ -25,7 +27,7 @@ public class MainMenuScreen extends SimpleGui {
                 .setName(Component.literal("Start a Quest"))
                 .setLore(List.of(Component.literal("View and start available quests.")))
                 .setCallback((index, type, action) -> {
-                    new QuestListScreen(player, this, 0).open();
+                    new QuestListScreen(player, this, this::openStartQuestConfirmation).open();
                 })
         );
 
@@ -56,5 +58,21 @@ public class MainMenuScreen extends SimpleGui {
                     .setCallback((index, type, action) -> new CurrentQuestScreen(player, this).open())
             );
         }
+    }
+
+    
+    private void openStartQuestConfirmation(Quest quest) {
+        new DialogGui(player, this,
+                Component.literal("Start Quest?"),
+                new GuiElementBuilder(Items.BOOK)
+                        .setName(Component.literal(quest.name)),
+                (gui) -> {
+                    try {
+                        NQuestBot.INSTANCE.questDispatcher.startQuest(player.getGameProfile().getId(), quest.id);
+                    } catch (QuestException e) {
+                        player.sendSystemMessage(e.getDisplayRepr(), false);
+                    }
+                }
+        ).open();
     }
 }

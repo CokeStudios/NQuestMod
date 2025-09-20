@@ -4,23 +4,24 @@ import cn.zbx1425.nquestbot.NQuestBot;
 import cn.zbx1425.nquestbot.data.quest.PlayerProfile;
 import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.BaseSlotGui;
-import eu.pb4.sgui.api.gui.SimpleGui;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.PlayerHeadItem;
 
 import java.util.List;
 
-public class ProfileScreen extends SimpleGui {
-
-    private BaseSlotGui parent;
+public class ProfileScreen extends ParentedGui {
 
     public ProfileScreen(ServerPlayer player, BaseSlotGui parent) {
-        super(MenuType.GENERIC_9x3, player, false);
-        this.parent = parent;
+        super(MenuType.GENERIC_9x3, player, parent);
         setTitle(Component.literal("My Profile"));
+        init();
+    }
+
+    @Override
+    public void init() {
+        super.init();
 
         PlayerProfile profile = NQuestBot.INSTANCE.questDispatcher.playerProfiles.get(player.getGameProfile().getId());
         if (profile == null) return;
@@ -48,19 +49,8 @@ public class ProfileScreen extends SimpleGui {
                 .setName(Component.literal("Quest History"))
                 .setLore(List.of(Component.literal("View your past quest completions.")))
                 .setCallback((index, type, action) -> {
-                    new QuestHistoryScreen(player, this,0).open();
+                    new QuestHistoryScreen(player, this).open();
                 })
         );
-
-        // Back button
-        setSlot(18, new GuiElementBuilder(Items.ARROW)
-                .setName(Component.literal("Back"))
-                .setCallback((index, type, action) -> close())
-        );
-    }
-
-    @Override
-    public void onClose() {
-        if (parent != null) parent.open();
     }
 }

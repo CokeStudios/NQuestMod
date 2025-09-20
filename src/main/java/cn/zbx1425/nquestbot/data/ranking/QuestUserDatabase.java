@@ -186,23 +186,24 @@ public class QuestUserDatabase {
         return result;
     }
 
-    public List<QuestTimeEntry> getQuestTimeLeaderboard(String questId, int limit, boolean monthly) throws SQLException {
-        List<QuestTimeEntry> result = new ArrayList<>();
-        String sql = "SELECT player_uuid, MIN(duration_millis) as best_time FROM quest_completions " +
+    public List<QuestCompletionData> getQuestTimeLeaderboard(String questId, int limit, boolean monthly) throws SQLException {
+        List<QuestCompletionData> result = new ArrayList<>();
+        String sql = "SELECT * FROM quest_completions " +
                 "WHERE quest_id = ? " +
                 (monthly ? "AND completion_time >= ? " : "") +
-                "GROUP BY player_uuid ORDER BY best_time ASC LIMIT ?";
+                "ORDER BY duration_millis ASC LIMIT ?";
+
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, questId);
+            int paramIndex = 1;
+            stmt.setString(paramIndex++, questId);
             if (monthly) {
-                stmt.setLong(2, getMonthlyTimestampCutoff());
-                stmt.setInt(3, limit);
-            } else {
-                stmt.setInt(2, limit);
+                stmt.setLong(paramIndex++, getMonthlyTimestampCutoff());
             }
+            stmt.setInt(paramIndex, limit);
+
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                result.add(new QuestTimeEntry(UUID.fromString(rs.getString("player_uuid")), questId, rs.getLong("best_time")));
+                result.add(questCompletionDataFromResultSet(rs));
             }
         }
         return result;
@@ -217,22 +218,27 @@ public class QuestUserDatabase {
             stmt.setInt(3, offset);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                QuestCompletionData data = new QuestCompletionData();
-                data.questId = rs.getString("quest_id");
-                data.completionTime = rs.getLong("completion_time");
-                data.durationMillis = rs.getLong("duration_millis");
-                data.questPoints = rs.getInt("quest_points");
-                String json = rs.getString("json");
-                if (json != null) {
-                    JsonObject miscFields = GSON.fromJson(json, JsonObject.class);
-                    data.stepDurations = GSON.fromJson(miscFields.get("stepDurations"), TypeToken.getParameterized(HashMap.class, Integer.class, Long.class).getType());
-                } else {
-                    data.stepDurations = new HashMap<>();
-                }
-                result.add(data);
+                result.add(questCompletionDataFromResultSet(rs));
             }
         }
         return result;
+    }
+
+    private QuestCompletionData questCompletionDataFromResultSet(ResultSet rs) throws SQLException {
+        QuestCompletionData data = new QuestCompletionData();
+        data.playerUuid = UUID.fromString(rs.getString("player_uuid"));
+        data.questId = rs.getString("quest_id");
+        data.completionTime = rs.getLong("completion_time");
+        data.durationMillis = rs.getLong("duration_millis");
+        data.questPoints = rs.getInt("quest_points");
+        String json = rs.getString("json");
+        if (json != null) {
+            JsonObject miscFields = GSON.fromJson(json, JsonObject.class);
+            data.stepDurations = GSON.fromJson(miscFields.get("stepDurations"), new TypeToken<Map<Integer, Long>>() {}.getType());
+        } else {
+            data.stepDurations = new HashMap<>();
+        }
+        return data;
     }
 
     private long getMonthlyTimestampCutoff() {

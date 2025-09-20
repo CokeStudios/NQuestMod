@@ -10,7 +10,7 @@ import net.minecraft.world.item.Items;
 
 public abstract class ParentedGui extends SimpleGui {
 
-    private final BaseSlotGui parent;
+    protected final BaseSlotGui parent;
 
     public ParentedGui(MenuType<?> type, ServerPlayer player, BaseSlotGui parent) {
         super(type, player, false);
@@ -27,7 +27,10 @@ public abstract class ParentedGui extends SimpleGui {
 
     @Override
     public void onClose() {
-        super.onClose();
-        if (parent != null) parent.open();
+        if (parent != null) {
+            parent.open();
+        } else {
+            super.onClose();
+        }
     }
 }

@@ -118,6 +118,7 @@ public class QuestDispatcher {
             profile.activeQuests.remove(progress.questId);
 
             QuestCompletionData completionData = new QuestCompletionData();
+            completionData.playerUuid = profile.playerUuid;
             completionData.questId = quest.id;
             completionData.completionTime = now;
             completionData.durationMillis = now - progress.questStartTime;

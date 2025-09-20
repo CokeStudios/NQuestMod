@@ -14,13 +14,15 @@ import java.util.concurrent.CompletableFuture;
 
 public abstract class ItemListGui<TItem> extends ParentedGui {
 
-    private int rowContentStarts;
-    private int rowContentEnds;
+    protected int rowContentStarts;
+    protected int rowContentEnds;
 
-    private int page = 0;
+    protected int page = 0;
 
     public ItemListGui(MenuType<?> type, ServerPlayer player, BaseSlotGui parent) {
         super(type, player, parent);
+        rowContentStarts = 0;
+        rowContentEnds = height - 2;
     }
 
     @Override
@@ -50,26 +52,39 @@ public abstract class ItemListGui<TItem> extends ParentedGui {
                 }
             }
             if (page > 0) {
-                setSlot(9 * rowContentEnds + 5, new GuiElementBuilder(Items.PAPER)
+                setSlot(9 * (rowContentEnds + 1) + 5, new GuiElementBuilder(Items.PAPER)
                     .setName(Component.literal("<<<<"))
+                    .setCount(page)
                     .setCallback((index, type, action) -> {
                         page--;
                         init();
                     })
                 );
             } else {
-                clearSlot(9 * rowContentEnds + 5);
+                clearSlot(9 * (rowContentEnds + 1) + 5);
             }
             if ((page + 1) * pageSize < totalSize) {
-                setSlot(9 * rowContentEnds + 7, new GuiElementBuilder(Items.PAPER)
+                setSlot(9 * (rowContentEnds + 1) + 7, new GuiElementBuilder(Items.PAPER)
                     .setName(Component.literal(">>>>"))
+                    .setCount(page + 2)
                     .setCallback((index, type, action) -> {
                         page++;
                         init();
                     })
                 );
             } else {
-                clearSlot(9 * rowContentEnds + 7);
+                clearSlot(9 * (rowContentEnds + 1) + 7);
+            }
+            if (totalSize > pageSize) {
+                Component pageInfo = totalSize == 99999
+                    ? Component.literal("Page " + (page + 1))
+                    : Component.literal("Page " + (page + 1) + " of " + ((totalSize + pageSize - 1) / pageSize));
+                setSlot(9 * (rowContentEnds + 1) + 6, new GuiElementBuilder(Items.CHAIN)
+                    .setCount(page + 1)
+                    .setName(pageInfo)
+                );
+            } else {
+                clearSlot(9 * (rowContentEnds + 1) + 6);
             }
         })).exceptionally(ex -> {
             NQuestBot.LOGGER.error("Error loading items for ItemListGui", ex);
