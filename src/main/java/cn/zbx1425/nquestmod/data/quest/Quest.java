@@ -12,10 +12,12 @@ public class Quest {
     public String id;
     public String name;
     public String description;
-    public List<Step> steps;
-    public int questPoints;
     public String category;
     public String tier;
+    public int questPoints;
+
+    public Step defaultCriteria; // Optional
+    public List<Step> steps;
 
     public List<Component> formatDescription() {
         return Stream.of(description.split("\n"))

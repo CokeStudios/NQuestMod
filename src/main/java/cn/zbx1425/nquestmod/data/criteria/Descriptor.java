@@ -3,34 +3,44 @@ package cn.zbx1425.nquestmod.data.criteria;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
-public class NotCriterion implements Criterion {
+public class Descriptor implements Criterion {
 
     protected Criterion base;
     public String description;
 
-    public NotCriterion(Criterion base, String description) {
+    public transient Component richDescription;
+
+    public Descriptor(Criterion base, String description) {
         this.base = base;
         this.description = description;
+        this.richDescription = Component.literal(description);
     }
 
-    public NotCriterion(NotCriterion singleton) {
+    public Descriptor(Criterion base, Component richDescription) {
+        this.base = base;
+        this.description = richDescription.getString();
+        this.richDescription = richDescription;
+    }
+
+    public Descriptor(Descriptor singleton) {
         this.base = singleton.base.createStatefulInstance();
         this.description = singleton.description;
+        this.richDescription = singleton.richDescription;
     }
 
     @Override
     public boolean isFulfilled(ServerPlayer player) {
-        return !base.isFulfilled(player);
+        return base.isFulfilled(player);
     }
 
     @Override
     public Component getDisplayRepr() {
-        return Component.literal(description);
+        return richDescription != null ? richDescription : Component.literal(description);
     }
 
     @Override
     public Criterion createStatefulInstance() {
-        return new NotCriterion(this);
+        return new Descriptor(this);
     }
 
     @Override

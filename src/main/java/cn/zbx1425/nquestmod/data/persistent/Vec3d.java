@@ -14,4 +14,8 @@ public class Vec3d {
                this.y >= min.y && this.y <= max.y &&
                this.z >= min.z && this.z <= max.z;
     }
+
+    public double distManhattan(Vec3d other) {
+        return Math.abs(this.x - other.x) + Math.abs(this.y - other.y) + Math.abs(this.z - other.z);
+    }
 }

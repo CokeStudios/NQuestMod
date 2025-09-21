@@ -1,6 +1,7 @@
 package cn.zbx1425.nquestmod.data.criteria.mtr;
 
 import cn.zbx1425.nquestmod.data.criteria.Criterion;
+import cn.zbx1425.nquestmod.data.criteria.Descriptor;
 import cn.zbx1425.nquestmod.data.criteria.RisingEdgeAndConditionCriterion;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.ChatFormatting;
@@ -27,6 +28,9 @@ public class RideToStationCriterion implements Criterion {
 
     @Override
     public Criterion createStatefulInstance() {
-        return new RisingEdgeAndConditionCriterion(new VisitStationCriterion(stationName), new RideLineCriterion(""), this);
+        return new Descriptor(
+            new RisingEdgeAndConditionCriterion(new VisitStationCriterion(stationName), new RideLineCriterion("")),
+            getDisplayRepr()
+        );
     }
 }

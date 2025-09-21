@@ -9,7 +9,7 @@
   ],
   "contact": {
     "website": "https://www.zbx1425.cn",
-    "repo": "https://github.com/zbx1425/NQuestBot"
+    "repo": "https://github.com/zbx1425/NQuestMod"
   },
   "license": "MIT",
   "icon": "assets/nquestmod/icon.png",
@@ -23,7 +23,7 @@
     "nquestmod.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=${loader_version}",
+    "fabricloader": "*",
     "fabric": "*",
     "minecraft": "${minecraft_version}"
   }

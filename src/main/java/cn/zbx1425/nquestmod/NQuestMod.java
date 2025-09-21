@@ -43,7 +43,7 @@ public class NQuestMod implements ModInitializer {
 
         ServerLifecycleEvents.SERVER_STARTING.register((server) -> {
             try {
-                Path basePath = server.getWorldPath(LevelResource.ROOT).resolve("quest_bot");
+                Path basePath = server.getWorldPath(LevelResource.ROOT).resolve("nquest");
                 Files.createDirectories(basePath);
 
                 questStorage = new QuestPersistence(basePath);

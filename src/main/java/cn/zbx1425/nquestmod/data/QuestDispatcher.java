@@ -6,10 +6,12 @@ import cn.zbx1425.nquestmod.data.quest.Step;
 import cn.zbx1425.nquestmod.data.quest.PlayerProfile;
 import cn.zbx1425.nquestmod.data.quest.QuestCompletionData;
 import cn.zbx1425.nquestmod.data.quest.QuestProgress;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.sql.SQLException;
 import java.util.*;
+import java.util.List;
 import java.util.function.Function;
 
 public class QuestDispatcher {
@@ -44,13 +46,10 @@ public class QuestDispatcher {
                 }
                 isAnyQuestGoingOn = true;
 
-                Step currentStep = quest.steps.get(progress.currentStepIndex);
                 ServerPlayer player = playerGetter.apply(profile.playerUuid);
                 if (player == null) continue; // Player might not be online, but has active quest
 
-                if (checkCriteriaFulfilled(progress, currentStep, player, null)) {
-                    advanceQuestStep(profile, progress, quest, player);
-                }
+                tryAdvance(profile, quest, progress, player, null);
             }
         }
         return isAnyQuestGoingOn;
@@ -65,12 +64,7 @@ public class QuestDispatcher {
             if (quest == null || progress.currentStepIndex >= quest.steps.size()) {
                 continue;
             }
-
-            Step currentStep = quest.steps.get(progress.currentStepIndex);
-
-            if (checkCriteriaFulfilled(progress, currentStep, player, triggerId)) {
-                advanceQuestStep(profile, progress, quest, player);
-            }
+            tryAdvance(profile, quest, progress, player, triggerId);
         }
     }
 
@@ -107,7 +101,7 @@ public class QuestDispatcher {
         }
     }
 
-    private void advanceQuestStep(PlayerProfile profile, QuestProgress progress, Quest quest, ServerPlayer player) {
+    private void advanceQuestStep(PlayerProfile profile, QuestProgress progress, Quest quest) {
         // Mark current step as complete
         long now = System.currentTimeMillis();
         progress.currentStepIndex++;
@@ -150,18 +144,31 @@ public class QuestDispatcher {
         }
     }
 
-    private boolean checkCriteriaFulfilled(QuestProgress progress, Step step, ServerPlayer player, String triggerId) {
-        if (progress.currentStepStatefulCriteria == null) {
-            progress.currentStepStatefulCriteria = step.createStatefulCriteria();
+    private void tryAdvance(PlayerProfile profile, Quest quest, QuestProgress progress, ServerPlayer player, String triggerId) {
+        if (progress.currentStepStateful == null) {
+            Step currentStep = quest.steps.get(progress.currentStepIndex);
+            progress.currentStepStateful = currentStep.createStatefulInstance();
+            progress.defaultCriteriaStateful = quest.defaultCriteria == null ? null : quest.defaultCriteria.createStatefulInstance();
         }
+
         if (triggerId != null) {
-            progress.currentStepStatefulCriteria.propagateManualTrigger(triggerId);
+            progress.currentStepStateful.propagateManualTrigger(triggerId);
+            if (progress.defaultCriteriaStateful != null) {
+                progress.defaultCriteriaStateful.propagateManualTrigger(triggerId);
+            }
         }
-        if (progress.currentStepStatefulCriteria.isFulfilled(player)) {
-            progress.currentStepStatefulCriteria = null; // Reset for next step
-            return true;
-        } else {
-            return false;
+
+        Optional<Component> questFailedAndReason = progress.currentStepStateful.isFailedAndReason(progress.defaultCriteriaStateful, player);
+        if (questFailedAndReason.isPresent()) {
+            profile.activeQuests.remove(progress.questId);
+            callback.onQuestFailed(this, profile.playerUuid, quest, questFailedAndReason.get());
+            return;
+        }
+
+        if (progress.currentStepStateful.isFulfilled(player)) {
+            progress.currentStepStateful = null; // Reset for next step
+            progress.defaultCriteriaStateful = null;
+            advanceQuestStep(profile, progress, quest);
         }
     }
 }

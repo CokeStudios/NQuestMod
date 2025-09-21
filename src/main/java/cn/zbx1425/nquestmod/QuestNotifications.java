@@ -93,6 +93,18 @@ public class QuestNotifications implements IQuestCallbacks {
         updateBossBarForPlayer(questEngine, player);
     }
 
+    @Override
+    public void onQuestFailed(QuestDispatcher questEngine, UUID playerUuid, Quest quest, Component reason) {
+        ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+        if (player == null) return;
+        player.sendSystemMessage(Component.literal("✘ Quest Failed ✘")
+            .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withBold(true)), false);
+        player.sendSystemMessage(Component.literal(quest.name).withStyle(ChatFormatting.YELLOW), false);
+        player.sendSystemMessage(Component.literal("  Reason: ").withStyle(ChatFormatting.WHITE)
+            .append(reason.copy().withStyle(ChatFormatting.RED)), false);
+        updateBossBarForPlayer(questEngine, player);
+    }
+
     private void updateBossBarForPlayer(QuestDispatcher questEngine, ServerPlayer player) {
         Optional<Consumer<CustomBossEvent>> bossBarMessage = getBossBarMessage(questEngine, player.getGameProfile().getId());
         ResourceLocation playerId = NQuestMod.id(player.getGameProfile().getId().toString());
