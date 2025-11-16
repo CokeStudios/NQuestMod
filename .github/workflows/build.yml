@@ -1,31 +1,26 @@
 name: Build
-on: [ pull_request, push, workflow_dispatch ]
+on: [ pull_request, push ]
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        minecraft: [ 1.20.4 ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@main
+        uses: actions/checkout@v2
       - name: Validate gradle wrapper
-        uses: gradle/wrapper-validation-action@main
+        uses: gradle/wrapper-validation-action@v1
       - name: Setup JDK 21
-        uses: actions/setup-java@main
+        uses: actions/setup-java@v1
         with:
           java-version: 21
-          distribution: 'zulu'
       - name: Make gradle wrapper executable
         run: chmod +x ./gradlew
-      # - name: Setup Fabric files
-      #   run: ./gradlew setupFiles -PminecraftVersion="${{ matrix.minecraft }}"
-      - name: Build ${{ matrix.minecraft }}
-        run: ./gradlew build -PminecraftVersion="${{ matrix.minecraft }}"
+      - name: Build
+        run: ./gradlew build
+      - name: Move file
+        run: ./gradlew moveFile
       - name: Capture release artifacts
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v2
         with:
-          name: Fabric ${{ matrix.minecraft }}
+          name: Fabric Artifacts
           path: build/release/
