@@ -17,10 +17,8 @@ jobs:
         run: chmod +x ./gradlew
       - name: Build
         run: ./gradlew build
-      - name: Move file
-        run: ./gradlew moveFile
       - name: Capture release artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Fabric Artifacts
-          path: build/release/
+          path: build/libs/
