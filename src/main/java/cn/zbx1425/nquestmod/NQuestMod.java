@@ -4,6 +4,7 @@ import cn.zbx1425.nquestmod.data.QuestDispatcher;
 import cn.zbx1425.nquestmod.data.QuestPersistence;
 import cn.zbx1425.nquestmod.data.quest.QuestCategory;
 import cn.zbx1425.nquestmod.data.ranking.QuestUserDatabase;
+import cn.zbx1425.nquestmod.interop.GenerationStatus;
 import cn.zbx1425.nquestmod.interop.TscStatus;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.resources.ResourceLocation;
@@ -106,6 +107,7 @@ public class NQuestMod implements ModInitializer {
             }
             if (server.getTickCount() % 20 != 15) return; // Once 1 second
             TscStatus.isAnyQuestGoingOn = questDispatcher.updatePlayers(server.getPlayerList()::getPlayer);
+            GenerationStatus.nextGeneration();
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) ->
