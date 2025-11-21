@@ -4,6 +4,7 @@ import cn.zbx1425.nquestmod.data.QuestDispatcher;
 import cn.zbx1425.nquestmod.data.QuestPersistence;
 import cn.zbx1425.nquestmod.data.quest.QuestCategory;
 import cn.zbx1425.nquestmod.data.ranking.QuestUserDatabase;
+import cn.zbx1425.nquestmod.interop.GenerationStatus;
 import cn.zbx1425.nquestmod.interop.TscStatus;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.resources.ResourceLocation;
@@ -73,26 +74,30 @@ public class NQuestMod implements ModInitializer {
         });
 
         ServerPlayConnectionEvents.JOIN.register((packetListener, packetSender, server) -> {
-            ServerPlayer player = packetListener.getPlayer();
-            try {
-                questDispatcher.playerProfiles.put(player.getGameProfile().getId(),
+            server.execute(() -> {
+                ServerPlayer player = packetListener.getPlayer();
+                try {
+                    questDispatcher.playerProfiles.put(player.getGameProfile().getId(),
                         userDatabase.loadPlayerProfile(player.getGameProfile().getId()));
-                questNotifications.onPlayerJoin(questDispatcher, player.getGameProfile().getId());
-            } catch (SQLException ex) {
-                LOGGER.error("Failed to load player profile for {}", player.getGameProfile().getName(), ex);
-            }
+                    questNotifications.onPlayerJoin(questDispatcher, player.getGameProfile().getId());
+                } catch (SQLException ex) {
+                    LOGGER.error("Failed to load player profile for {}", player.getGameProfile().getName(), ex);
+                }
+            });
         });
 
         ServerPlayConnectionEvents.DISCONNECT.register((packetListener, server) -> {
-            ServerPlayer player = packetListener.getPlayer();
-            PlayerProfile profile = questDispatcher.playerProfiles.remove(player.getGameProfile().getId());
-            if (profile != null) {
-                try {
-                    userDatabase.savePlayerProfile(profile);
-                } catch (SQLException ex) {
-                    LOGGER.error("Failed to save player profile for {}", player.getGameProfile().getName(), ex);
+            server.execute(() -> {
+                ServerPlayer player = packetListener.getPlayer();
+                PlayerProfile profile = questDispatcher.playerProfiles.remove(player.getGameProfile().getId());
+                if (profile != null) {
+                    try {
+                        userDatabase.savePlayerProfile(profile);
+                    } catch (SQLException ex) {
+                        LOGGER.error("Failed to save player profile for {}", player.getGameProfile().getName(), ex);
+                    }
                 }
-            }
+            });
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -102,6 +107,7 @@ public class NQuestMod implements ModInitializer {
             }
             if (server.getTickCount() % 20 != 15) return; // Once 1 second
             TscStatus.isAnyQuestGoingOn = questDispatcher.updatePlayers(server.getPlayerList()::getPlayer);
+            GenerationStatus.nextGeneration();
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) ->
