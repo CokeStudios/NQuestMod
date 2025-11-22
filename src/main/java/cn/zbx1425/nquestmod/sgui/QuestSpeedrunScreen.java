@@ -41,6 +41,7 @@ public class QuestSpeedrunScreen extends TabbedItemListGui<QuestCompletionData, 
 
         if (selectedPrimaryTab != LeaderboardScreen.LeaderboardType.SPEEDRUN) {
             if (parent instanceof LeaderboardScreen leaderboardScreen) {
+                NQuestMod.LOGGER.warn("99999");
                 leaderboardScreen.selectedPrimaryTab = selectedPrimaryTab;
                 leaderboardScreen.init();
             }
