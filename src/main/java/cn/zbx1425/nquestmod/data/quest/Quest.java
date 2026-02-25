@@ -4,10 +4,13 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Quest {
+
+    public enum QuestStatus { PRIVATE, STAGING, PUBLIC }
 
     public String id;
     public String name;
@@ -15,9 +18,24 @@ public class Quest {
     public String category;
     public String tier;
     public int questPoints;
+    public QuestStatus status;
+    public List<String> creators;
 
     public Step defaultCriteria; // Optional
     public List<Step> steps;
+
+    public QuestStatus getEffectiveStatus() {
+        return status != null ? status : QuestStatus.PUBLIC;
+    }
+
+    public boolean isVisibleTo(UUID playerUuid, boolean debugMode) {
+        return switch (getEffectiveStatus()) {
+            case PUBLIC -> true;
+            case STAGING -> debugMode;
+            case PRIVATE -> debugMode
+                    && creators != null && creators.contains(playerUuid.toString());
+        };
+    }
 
     public List<Component> formatDescription() {
         return Stream.of(description.split("\n"))
@@ -30,11 +48,13 @@ public class Quest {
     // Maybe there can be some better way to do this?
     public void preTouchDescriptions() {
         for (Step step : steps) {
-            if (step.criteria != null) step.criteria.createStatefulInstance().getDisplayRepr();
-            if (step.failureCriteria != null) step.failureCriteria.createStatefulInstance().getDisplayRepr();
+            Step expanded = step.expand();
+            if (expanded.criteria != null) expanded.criteria.getDisplayRepr();
+            if (expanded.failureCriteria != null) expanded.failureCriteria.getDisplayRepr();
         }
-        if (defaultCriteria != null && defaultCriteria.failureCriteria != null) {
-            defaultCriteria.failureCriteria.createStatefulInstance().getDisplayRepr();
+        if (defaultCriteria != null) {
+            Step expandedDefault = defaultCriteria.expand();
+            if (expandedDefault.failureCriteria != null) expandedDefault.failureCriteria.getDisplayRepr();
         }
     }
 }

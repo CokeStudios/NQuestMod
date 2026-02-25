@@ -1,6 +1,7 @@
 package cn.zbx1425.nquestmod.data.criteria.mtr;
 
 import cn.zbx1425.nquestmod.data.criteria.Criterion;
+import cn.zbx1425.nquestmod.data.criteria.CriterionContext;
 import cn.zbx1425.nquestmod.interop.TscStatus;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.ChatFormatting;
@@ -15,7 +16,7 @@ public class VisitStationCriterion implements Criterion {
     }
 
     @Override
-    public boolean isFulfilled(ServerPlayer player) {
+    public boolean evaluate(ServerPlayer player, CriterionContext ctx) {
         TscStatus.ClientState state = TscStatus.getClientState(player);
 
         if (state == null) return false;
@@ -26,7 +27,8 @@ public class VisitStationCriterion implements Criterion {
                 break;
             }
         }
-        return stationFulfilled;
+        // Only counts if the train is stopped / not riding a train
+        return stationFulfilled && !state.trainDoorClosed();
     }
 
     @Override
