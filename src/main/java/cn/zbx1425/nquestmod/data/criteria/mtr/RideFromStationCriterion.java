@@ -1,18 +1,17 @@
 package cn.zbx1425.nquestmod.data.criteria.mtr;
 
 import cn.zbx1425.nquestmod.data.criteria.*;
-import cn.zbx1425.nquestmod.interop.TscStatus;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
 
-public class VisitStationCriterion implements Criterion {
+public class RideFromStationCriterion implements Criterion {
 
     public String stationName;
 
-    public VisitStationCriterion(String stationName) {
+    public RideFromStationCriterion(String stationName) {
         this.stationName = stationName;
     }
 
@@ -23,18 +22,22 @@ public class VisitStationCriterion implements Criterion {
 
     @Override
     public Component getDisplayRepr() {
-        return Component.literal("Visit ").withStyle(ChatFormatting.GRAY)
+        return Component.literal("Depart from ").withStyle(ChatFormatting.GRAY)
             .append(Component.literal(MtrNameUtil.getStationDisplayName(stationName))
-                .withStyle(ChatFormatting.AQUA).withStyle(ChatFormatting.BOLD));
+                .withStyle(ChatFormatting.AQUA).withStyle(ChatFormatting.BOLD))
+            .append(Component.literal(" on any line").withStyle(ChatFormatting.GRAY));
     }
 
     @Override
     public Criterion expand() {
         return new Descriptor(
-            new AndCriterion(List.of(
-                new InStationAreaCriterion(stationName),
-                new StationStopCriterion()
-            )),
+            new RisingEdgeAndConditionCriterion(
+                new NotCriterion(new StationStopCriterion(), ""),
+                new AndCriterion(List.of(
+                    new InStationAreaCriterion(stationName),
+                    new RideLineCriterion("")
+                ))
+            ),
             getDisplayRepr()
         );
     }

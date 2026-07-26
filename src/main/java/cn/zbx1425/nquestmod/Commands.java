@@ -186,6 +186,18 @@ public class Commands {
                         return 1;
                     })
                 )
+                .then(literal.apply("reload")
+                    .requires(source -> source.hasPermission(3))
+                    .executes(ctx -> {
+                        try {
+                            NQuestMod.SERVER_CONFIG.reload();
+                        } catch (Exception ex) {
+                            NQuestMod.LOGGER.error("Failed to reload config", ex);
+                            throw new SimpleCommandExceptionType(Component.literal("Failed to reload config: " + ex)).create();
+                        }
+                        return 1;
+                    })
+                )
             )
             .then(literal.apply("debugMode")
                 .requires(source -> source.hasPermission(2))
@@ -215,7 +227,7 @@ public class Commands {
 
     private static void startQuest(ServerPlayer participant, String questId) throws CommandSyntaxException {
         try {
-            NQuestMod.INSTANCE.questDispatcher.startQuest(participant, questId);
+            NQuestMod.INSTANCE.questDispatcher.startQuestWithEligibilityCheck(participant, questId);
         } catch (QuestException ex) {
             throw ex.createMinecraftException();
         }

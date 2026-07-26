@@ -2,7 +2,9 @@ package cn.zbx1425.nquestmod;
 
 import cn.zbx1425.nquestmod.data.QuestDispatcher;
 import cn.zbx1425.nquestmod.data.IQuestCallbacks;
+import cn.zbx1425.nquestmod.data.criteria.Criterion;
 import cn.zbx1425.nquestmod.data.quest.*;
+import cn.zbx1425.nquestmod.data.ranking.RankingApiClient;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -18,6 +20,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.BossEvent;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +55,16 @@ public class QuestNotifications implements IQuestCallbacks {
             Step firstStep = quest.steps.get(0);
             player.sendSystemMessage(Component.literal("▶ First: ").withStyle(ChatFormatting.AQUA)
                     .append(firstStep.criteria.getDisplayRepr()), false);
+
+            Criterion failureCriteria = firstStep.failureCriteria != null
+                ? firstStep.failureCriteria
+                : (quest.defaultCriteria != null
+                ? quest.defaultCriteria.failureCriteria : null);
+            if (failureCriteria != null) {
+                MutableComponent failureMsg = Component.literal("   Do not: ").withStyle(ChatFormatting.GRAY)
+                    .append(failureCriteria.getDisplayRepr());
+                player.sendSystemMessage(failureMsg, false);
+            }
         }
         sendSoundEffect(player, SoundEvents.AMETHYST_BLOCK_RESONATE, 2.0f, 1.0f);
         updateBossBarForPlayer(questEngine, player);
@@ -63,14 +78,24 @@ public class QuestNotifications implements IQuestCallbacks {
         if (progress.currentStepIndex > 0) {
             Step completedStep = quest.steps.get(progress.currentStepIndex - 1);
             player.sendSystemMessage(Component.literal("✔ Step Complete: ").withStyle(ChatFormatting.GREEN)
-                .append(completedStep.criteria.getDisplayRepr()), false);
+                .append(Component.literal(completedStep.criteria.getDisplayRepr().getString()).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)), false);
         }
 
         if (progress.currentStepIndex < quest.steps.size()) {
             Step nextStep = quest.steps.get(progress.currentStepIndex);
-            MutableComponent nextStepMsg = Component.literal("▶ Next: ").withStyle(ChatFormatting.AQUA)
+            MutableComponent nextStepMsg = Component.literal("▶ Next: ").withStyle(ChatFormatting.GOLD)
                     .append(nextStep.criteria.getDisplayRepr());
             player.sendSystemMessage(nextStepMsg, false);
+
+            Criterion failureCriteria = nextStep.failureCriteria != null
+                ? nextStep.failureCriteria
+                : (quest.defaultCriteria != null
+                    ? quest.defaultCriteria.failureCriteria : null);
+            if (failureCriteria != null) {
+                MutableComponent failureMsg = Component.literal("   Do not: ").withStyle(ChatFormatting.GRAY)
+                    .append(failureCriteria.getDisplayRepr());
+                player.sendSystemMessage(failureMsg, false);
+            }
         }
         sendSoundEffect(player, SoundEvents.AMETHYST_BLOCK_RESONATE, 2.0f, 1.0f);
         updateBossBarForPlayer(questEngine, player);
@@ -85,14 +110,16 @@ public class QuestNotifications implements IQuestCallbacks {
                 .withStyle(Style.EMPTY.withColor(ChatFormatting.GOLD).withBold(true)), false);
         player.sendSystemMessage(Component.literal(quest.name).withStyle(ChatFormatting.YELLOW), false);
         player.sendSystemMessage(Component.literal("  Time taken: ").withStyle(ChatFormatting.WHITE)
-                .append(Component.literal(formatDuration(data.durationMillis)).withStyle(ChatFormatting.AQUA)), false);
+                .append(Component.literal(formatDuration(data.durationMillis)).withStyle(ChatFormatting.GREEN)), false);
+        player.sendSystemMessage(Component.literal("  Quest Points: ").withStyle(ChatFormatting.WHITE)
+                .append(Component.literal("+" + quest.questPoints + " QP").withStyle(ChatFormatting.AQUA)), false);
+
         if (debug) {
-            player.sendSystemMessage(Component.literal("  (Debug - not recorded)")
-                    .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC), false);
-        } else {
-            player.sendSystemMessage(Component.literal("  Quest Points: ").withStyle(ChatFormatting.WHITE)
-                    .append(Component.literal("+" + quest.questPoints + " QP").withStyle(ChatFormatting.GREEN)), false);
+            player.sendSystemMessage(Component.literal("  NOTE: Ask a staff to DISQUALIFY this completion " +
+                    "if you don't want it to contribute to the leaderboard.")
+                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC), false);
         }
+
         sendSoundEffect(player, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
         updateBossBarForPlayer(questEngine, player);
     }
@@ -106,11 +133,11 @@ public class QuestNotifications implements IQuestCallbacks {
 
             if (isWorldRecord) {
                 player.sendSystemMessage(Component.literal("  World Record!")
-                        .withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withBold(true)), false);
+                        .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withBold(true)), false);
                 sendSoundEffect(player, SoundEvents.PLAYER_LEVELUP, 1.0f, 1.5f);
             } else if (isPersonalBest) {
                 player.sendSystemMessage(Component.literal("  Personal Best!")
-                        .withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withBold(true)), false);
+                        .withStyle(Style.EMPTY.withColor(ChatFormatting.BLUE).withBold(true)), false);
                 sendSoundEffect(player, SoundEvents.PLAYER_LEVELUP, 0.8f, 1.2f);
             }
 
@@ -139,10 +166,62 @@ public class QuestNotifications implements IQuestCallbacks {
         player.sendSystemMessage(Component.literal("✘ Quest Failed ✘")
             .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withBold(true)), false);
         player.sendSystemMessage(Component.literal(quest.name).withStyle(ChatFormatting.YELLOW), false);
-        player.sendSystemMessage(Component.literal("  Reason: ").withStyle(ChatFormatting.WHITE)
+        player.sendSystemMessage(Component.literal("Player did not follow requirement").withStyle(ChatFormatting.WHITE));
+        player.sendSystemMessage(Component.literal("  Do not: ").withStyle(ChatFormatting.WHITE)
             .append(reason.copy().withStyle(ChatFormatting.RED)), false);
         sendSoundEffect(player, SoundEvents.ANVIL_LAND, 0.5f, 1.0f);
         updateBossBarForPlayer(questEngine, player);
+    }
+
+    @Override
+    public void onPlayerBanned(UUID playerUuid, List<RankingApiClient.ActiveBan> activeBans) {
+        server.execute(() -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+            if (player == null) return;
+
+            player.sendSystemMessage(Component.literal("\u26D4 Cannot Start Quest \u26D4")
+                    .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withBold(true)), false);
+
+            RankingApiClient.ActiveBan ban = pickMostSevereBan(activeBans);
+            if (ban != null && "TEMP".equals(ban.banType)) {
+                player.sendSystemMessage(Component.literal("Your account is temporarily banned from Quest participation.")
+                        .withStyle(ChatFormatting.WHITE), false);
+                player.sendSystemMessage(Component.literal("  Reason: ").withStyle(ChatFormatting.GRAY)
+                        .append(Component.literal(ban.reason).withStyle(ChatFormatting.WHITE)), false);
+                if (ban.expiresAt != null) {
+                    String formatted = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm 'UTC'")
+                            .withZone(ZoneOffset.UTC)
+                            .format(Instant.ofEpochMilli(ban.expiresAt));
+                    player.sendSystemMessage(Component.literal("  Expires: ").withStyle(ChatFormatting.GRAY)
+                            .append(Component.literal(formatted).withStyle(ChatFormatting.AQUA)), false);
+                }
+            } else {
+                player.sendSystemMessage(Component.literal("Your account is permanently banned from Quest participation.")
+                        .withStyle(ChatFormatting.WHITE), false);
+                if (ban != null) {
+                    player.sendSystemMessage(Component.literal("  Reason: ").withStyle(ChatFormatting.GRAY)
+                            .append(Component.literal(ban.reason).withStyle(ChatFormatting.WHITE)), false);
+                }
+            }
+
+            sendSoundEffect(player, SoundEvents.ANVIL_LAND, 0.5f, 1.0f);
+        });
+    }
+
+    @Override
+    public void onCompletionRejectedBan(UUID playerUuid, Quest quest) {
+        server.execute(() -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(playerUuid);
+            if (player == null) return;
+
+            player.sendSystemMessage(Component.literal("\u26D4 Quest Completion Rejected \u26D4")
+                    .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withBold(true)), false);
+            player.sendSystemMessage(Component.literal(quest.name).withStyle(ChatFormatting.YELLOW), false);
+            player.sendSystemMessage(Component.literal("Your account was banned during this quest. The completion will not be recorded.")
+                    .withStyle(ChatFormatting.WHITE), false);
+
+            sendSoundEffect(player, SoundEvents.ANVIL_LAND, 0.5f, 1.0f);
+        });
     }
 
     private void updateBossBarForPlayer(QuestDispatcher questEngine, ServerPlayer player) {
@@ -188,6 +267,19 @@ public class QuestNotifications implements IQuestCallbacks {
                  event.setValue(progress.currentStepIndex);
             };
         });
+    }
+
+    private static RankingApiClient.ActiveBan pickMostSevereBan(List<RankingApiClient.ActiveBan> bans) {
+        if (bans == null || bans.isEmpty()) return null;
+        RankingApiClient.ActiveBan worst = null;
+        for (RankingApiClient.ActiveBan ban : bans) {
+            if ("PERM".equals(ban.banType)) return ban;
+            if (worst == null
+                    || (ban.expiresAt != null && (worst.expiresAt == null || ban.expiresAt > worst.expiresAt))) {
+                worst = ban;
+            }
+        }
+        return worst;
     }
 
     private String formatDuration(long millis) {

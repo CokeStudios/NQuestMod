@@ -5,7 +5,7 @@ import cn.zbx1425.nquestmod.data.QuestPersistence;
 import cn.zbx1425.nquestmod.data.QuestSyncClient;
 import cn.zbx1425.nquestmod.data.quest.QuestCategory;
 import cn.zbx1425.nquestmod.data.quest.PlayerProfile;
-import cn.zbx1425.nquestmod.data.ranking.LocalProfileStorage;
+import cn.zbx1425.nquestmod.data.QuestProgressPersistence;
 import cn.zbx1425.nquestmod.data.ranking.PendingCompletions;
 import cn.zbx1425.nquestmod.data.ranking.RankingApiClient;
 import cn.zbx1425.nquestmod.interop.GenerationStatus;
@@ -38,7 +38,7 @@ public class NQuestMod implements ModInitializer {
 
     public QuestPersistence questStorage;
     public RankingApiClient rankingApi;
-    public LocalProfileStorage profileStorage;
+    public QuestProgressPersistence profileStorage;
     public PendingCompletions pendingCompletions;
     public QuestDispatcher questDispatcher;
     public QuestNotifications questNotifications;
@@ -62,7 +62,7 @@ public class NQuestMod implements ModInitializer {
                 questCategories = questStorage.loadQuestCategories();
 
                 rankingApi = new RankingApiClient(SERVER_CONFIG);
-                profileStorage = new LocalProfileStorage(basePath);
+                profileStorage = new QuestProgressPersistence(basePath);
                 pendingCompletions = new PendingCompletions(basePath);
 
                 questNotifications = new QuestNotifications(server);
@@ -74,7 +74,7 @@ public class NQuestMod implements ModInitializer {
                     commandSigner.signingKey = SERVER_CONFIG.commandSigningKey.value;
                 } else {
                     SERVER_CONFIG.commandSigningKey = SERVER_CONFIG.commandSigningKey.withNewValueToPersist(
-                        commandSigner.signingKey, new JsonPrimitive(commandSigner.signingKey.toString()));
+                            commandSigner.signingKey, new JsonPrimitive(commandSigner.signingKey.toString()));
                 }
 
                 questSyncClient = new QuestSyncClient(SERVER_CONFIG, questStorage, server);
@@ -128,7 +128,8 @@ public class NQuestMod implements ModInitializer {
                 if (rankingApi != null && rankingApi.isEnabled()) {
                     rankingApi.getPlayerProfile(playerUuid).whenComplete((stats, error) -> {
                         if (error != null) {
-                            LOGGER.warn("Failed to fetch player stats for {}", player.getGameProfile().getName(), error);
+                            LOGGER.warn("Failed to fetch player stats for {}", player.getGameProfile().getName(),
+                                    error);
                             return;
                         }
                         profile.qpBalance = stats.qpBalance;
@@ -155,6 +156,8 @@ public class NQuestMod implements ModInitializer {
                     }
                     profileStorage.save(playerUuid, profile.activeQuests);
                 }
+                TscStatus.CLIENT_POSITIONS.remove(playerUuid);
+                TscStatus.CLIENTS.remove(playerUuid);
             });
         });
 
@@ -166,14 +169,14 @@ public class NQuestMod implements ModInitializer {
             if (server.getTickCount() % 20 == 10 && questSyncClient != null) {
                 questSyncClient.tick(server.getTickCount());
             }
-            if (server.getTickCount() % 20 != 15) return;
+            if (server.getTickCount() % 20 != 15)
+                return;
             TscStatus.isAnyQuestGoingOn = questDispatcher.updatePlayers(server.getPlayerList()::getPlayer);
             GenerationStatus.nextGeneration();
         });
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) ->
-            Commands.register(dispatcher, net.minecraft.commands.Commands::literal, net.minecraft.commands.Commands::argument)
-        );
+        CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> Commands.register(dispatcher,
+                net.minecraft.commands.Commands::literal, net.minecraft.commands.Commands::argument));
     }
 
     public static ResourceLocation id(String path) {
